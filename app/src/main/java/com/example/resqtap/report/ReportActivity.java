@@ -1046,6 +1046,16 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
                                 currentReportStatus = lastStatus;
                                 UserPrefs.setLastIncidentReportStatus(ReportActivity.this, lastStatus);
                                 updateStatusAndStepperUI(lastStatus);
+                                boolean isResolved = "resolved".equalsIgnoreCase(lastStatus);
+                                if (!isResolved && !isShowingProgress) {
+                                    showProgressMode();
+                                }
+                                if (btnNewReportTop != null) {
+                                    btnNewReportTop.setVisibility(isShowingProgress && isResolved ? View.VISIBLE : View.GONE);
+                                }
+                                if (cardActiveReportBanner != null) {
+                                    cardActiveReportBanner.setVisibility(View.GONE);
+                                }
                                 if (lastNotes != null && !lastNotes.trim().isEmpty() && tvProgressDetails != null) {
                                     tvProgressDetails.setText(lastNotes.trim());
                                     tvProgressDetails.setVisibility(View.VISIBLE);
@@ -1082,17 +1092,18 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
                                     UserPrefs.setLastIncidentReportStatus(ReportActivity.this, status);
                                     renderProgressData(currentReportId, data);
 
-                                    boolean isResolved = "resolved".equalsIgnoreCase(status);
-                                    if (!isResolved) {
-                                        if (!isShowingProgress) showProgressMode();
-                                        if (btnNewReportTop != null) btnNewReportTop.setVisibility(View.GONE);
-                                        if (cardActiveReportBanner != null) cardActiveReportBanner.setVisibility(View.GONE);
-                                        reportPollHandler.postDelayed(reportPollRunnable, 2000);
-                                    } else {
-                                        if (btnNewReportTop != null && isShowingProgress) {
-                                            btnNewReportTop.setVisibility(View.VISIBLE);
-                                        }
+                                boolean isResolved = "resolved".equalsIgnoreCase(status);
+                                if (!isResolved) {
+                                    if (!isShowingProgress) showProgressMode();
+                                    if (btnNewReportTop != null) btnNewReportTop.setVisibility(View.GONE);
+                                    if (cardActiveReportBanner != null) cardActiveReportBanner.setVisibility(View.GONE);
+                                    reportPollHandler.postDelayed(reportPollRunnable, 2000);
+                                } else {
+                                    if (btnNewReportTop != null && isShowingProgress) {
+                                        btnNewReportTop.setVisibility(View.VISIBLE);
                                     }
+                                    reportPollHandler.postDelayed(reportPollRunnable, 3500);
+                                }
                                 });
                             }
 

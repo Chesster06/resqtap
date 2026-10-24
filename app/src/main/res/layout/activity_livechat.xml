@@ -2,478 +2,335 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    android:id="@+id/livechat_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_home"
-    tools:context=".LivechatActivity">
+    android:background="@color/bg"
+    tools:context=".chat.LivechatActivity">
 
-    <LinearLayout
-        android:id="@+id/livechat_header"
+    <!-- Top Bar: Same sleek layout as SOS Livechat -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/livechat_topbar"
         android:layout_width="0dp"
-        android:layout_height="132dp"
-        android:background="@drawable/bg_livechat_ticket_header"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="18dp"
+        android:layout_height="72dp"
+        android:background="@color/bg"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_back"
+            style="@style/Widget.ResQTap.MapControlButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_room_header_icon"
             android:contentDescription="@string/back"
-            android:padding="12dp"
-            android:src="@drawable/ic_arrow_back_24"
-            android:tint="@color/white" />
+            app:icon="@drawable/ic_arrow_back_24"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconTint="@color/text_primary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:strokeWidth="0dp" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_marginEnd="10dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btn_delete_livechat"
+            app:layout_constraintStart_toEndOf="@id/btn_back"
+            app:layout_constraintTop_toTopOf="parent">
 
             <TextView
-                android:id="@+id/title"
-                android:layout_width="match_parent"
+                android:id="@+id/tv_livechat_title"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/support_livechat_title"
-                android:textColor="@color/white"
-                android:textSize="22sp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Report Livechat"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/desc"
-                android:layout_width="match_parent"
+                android:id="@+id/tv_livechat_subtitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:maxLines="2"
-                android:text="@string/support_livechat_entry_desc"
-                android:textColor="#D9CFF0"
-                android:textSize="12sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="30dp"
-                    android:background="@drawable/bg_livechat_ticket_chip"
-                    android:gravity="center"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:text="@string/support_livechat_ticket_badge"
-                    android:textColor="@color/livechat_ticket_chip_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="30dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_livechat_ticket_chip"
-                    android:gravity="center"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:text="@string/support_livechat_queue_badge"
-                    android:textColor="@color/livechat_ticket_chip_text"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Perbualan langsung berkenaan Laporan"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
         </LinearLayout>
 
-        <ImageButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_delete_livechat"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_room_header_icon"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="6dp"
             android:contentDescription="Padam Chat"
-            android:padding="12dp"
-            android:src="@drawable/ic_delete"
-            app:tint="@color/white" />
-    </LinearLayout>
+            app:backgroundTint="@android:color/transparent"
+            app:cornerRadius="999dp"
+            app:icon="@drawable/ic_delete"
+            app:iconPadding="0dp"
+            app:iconSize="20dp"
+            app:iconTint="@color/danger_red"
+            app:strokeWidth="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btn_call_from_livechat"
+            app:layout_constraintTop_toTopOf="parent" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_call_from_livechat"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/sos_call_responder"
+            app:backgroundTint="@android:color/transparent"
+            app:cornerRadius="999dp"
+            app:icon="@drawable/ic_phone"
+            app:iconPadding="0dp"
+            app:iconSize="20dp"
+            app:iconTint="@color/text_primary"
+            app:strokeWidth="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Messages Scroll Area -->
     <androidx.core.widget.NestedScrollView
-        android:id="@+id/livechat_start_scroll"
+        android:id="@+id/livechat_scroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingStart="14dp"
-        android:paddingTop="16dp"
+        android:paddingTop="12dp"
         android:paddingEnd="14dp"
-        android:paddingBottom="28dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:paddingBottom="12dp"
+        app:layout_constraintBottom_toTopOf="@id/typing_indicator_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/livechat_header">
+        app:layout_constraintTop_toBottomOf="@id/livechat_topbar">
 
         <LinearLayout
-            android:id="@+id/livechat_start_form"
+            android:id="@+id/livechat_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_livechat_ticket_card"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_livechat_ticket_chip">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_clipboard_24"
-                        android:tint="@color/livechat_ticket_chip_text" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/support_livechat_new_session"
-                        android:textColor="@color/text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="@string/support_livechat_form_note"
-                        android:textColor="@color/livechat_ticket_muted"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_livechat_ticket_surface"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/support_livechat_priority_label"
-                        android:textColor="@color/livechat_ticket_muted"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="@string/support_livechat_priority_value"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="10dp"
-                    android:layout_marginEnd="10dp"
-                    android:background="@color/livechat_ticket_stroke" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/support_livechat_sla_label"
-                        android:textColor="@color/livechat_ticket_muted"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="@string/support_livechat_sla_value"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/support_livechat_topic_label"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/livechat_topic_input"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="7dp"
-                android:background="@drawable/bg_livechat_ticket_field"
-                android:hint="@string/support_livechat_topic_hint"
-                android:inputType="textCapSentences"
-                android:maxLength="80"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:singleLine="true"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/livechat_ticket_muted"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="@string/support_livechat_message_label"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/livechat_initial_message_input"
-                android:layout_width="match_parent"
-                android:layout_height="132dp"
-                android:layout_marginTop="7dp"
-                android:background="@drawable/bg_livechat_ticket_field"
-                android:gravity="top"
-                android:hint="@string/support_livechat_initial_message_hint"
-                android:inputType="textCapSentences|textMultiLine"
-                android:maxLength="1000"
-                android:paddingStart="14dp"
-                android:paddingTop="12dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="12dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/livechat_ticket_muted"
-                android:textSize="14sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/livechat_start_button"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_livechat_ticket_button"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:text="@string/support_livechat_start"
-                android:textAllCaps="false"
-                android:textColor="@color/text_on_brand"
-                android:textStyle="bold"
-                app:cornerRadius="18dp"
-                app:icon="@drawable/ic_chevron_right"
-                app:iconGravity="textEnd"
-                app:iconPadding="10dp"
-                app:iconTint="@color/text_on_brand" />
-        </LinearLayout>
+            android:orientation="vertical" />
     </androidx.core.widget.NestedScrollView>
 
+    <!-- Typing Indicator View -->
     <LinearLayout
-        android:id="@+id/card_livechat"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginBottom="10dp"
-        android:background="@drawable/bg_livechat_ticket_card"
-        android:orientation="vertical"
-        android:padding="14dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/livechat_composer_wrap"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/livechat_header">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_livechat_ticket_surface"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="10dp">
-
-            <FrameLayout
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:background="@drawable/bg_livechat_ticket_chip">
-
-                <ImageView
-                    android:layout_width="21dp"
-                    android:layout_height="21dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_nav_message"
-                    android:tint="@color/livechat_ticket_chip_text" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/livechat_topic_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:maxLines="1"
-                    android:text="@string/support_livechat_title"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/livechat_status"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="@string/support_livechat_status_connecting"
-                    android:textColor="@color/livechat_ticket_muted"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <ScrollView
-            android:id="@+id/livechat_scroll"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="12dp"
-            android:layout_weight="1"
-            android:fillViewport="true"
-            android:overScrollMode="ifContentScrolls"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:id="@+id/livechat_messages"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingBottom="4dp" />
-        </ScrollView>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/livechat_composer_wrap"
-        android:layout_width="0dp"
+        android:id="@+id/typing_indicator_container"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginBottom="14dp"
-        android:background="@drawable/bg_livechat_composer_shell"
-        android:orientation="vertical"
-        android:padding="10dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_report_status_pill"
+        android:backgroundTint="#F1F5F9"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="4dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/quick_chips_scroll"
         app:layout_constraintStart_toStartOf="parent">
 
         <TextView
-            android:id="@+id/livechat_composer_attachment_label"
-            android:layout_width="match_parent"
+            android:id="@+id/tv_typing_status"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="@string/support_livechat_no_attachment"
-            android:textColor="@color/livechat_ticket_muted"
-            android:textSize="12sp"
-            android:visibility="gone" />
+            android:text="@string/sos_livechat_typing_status"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:textStyle="italic" />
+    </LinearLayout>
+
+    <!-- Quick Reply Chips -->
+    <HorizontalScrollView
+        android:id="@+id/quick_chips_scroll"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="6dp"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toTopOf="@id/livechat_composer_card"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <LinearLayout
-            android:id="@+id/livechat_composer"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="bottom"
             android:orientation="horizontal">
 
-            <ImageButton
-                android:id="@+id/livechat_attach"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_livechat_ticket_chip"
-                android:contentDescription="@string/support_livechat_attach"
-                android:padding="12dp"
-                android:src="@drawable/ic_add"
-                android:tint="@color/livechat_ticket_chip_text" />
-
-            <EditText
-                android:id="@+id/livechat_input"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_livechat_ticket_field"
-                android:hint="@string/support_livechat_hint"
-                android:imeOptions="actionSend"
-                android:inputType="textCapSentences|textMultiLine"
-                android:maxLength="1000"
-                android:maxLines="3"
-                android:minLines="1"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/livechat_ticket_muted"
-                android:textSize="14sp" />
-
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/livechat_send"
-                android:layout_width="76dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_livechat_ticket_button"
-                android:gravity="center"
+                android:id="@+id/chip_quick_1"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginEnd="6dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:maxLines="1"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:paddingStart="0dp"
-                android:paddingEnd="0dp"
-                android:singleLine="true"
-                android:text="@string/support_livechat_send"
+                android:text="Status laporan terkini?"
                 android:textAllCaps="false"
-                android:textColor="@color/text_on_brand"
-                android:textStyle="bold"
-                app:cornerRadius="16dp" />
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                app:cornerRadius="18dp"
+                app:strokeColor="#CBD5E1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/chip_quick_2"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginEnd="6dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Bila tindakan diambil?"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                app:cornerRadius="18dp"
+                app:strokeColor="#CBD5E1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/chip_quick_3"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginEnd="6dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Perlu maklumat lanjut?"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                app:cornerRadius="18dp"
+                app:strokeColor="#CBD5E1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/chip_quick_4"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Terima kasih atas bantuan"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                app:cornerRadius="18dp"
+                app:strokeColor="#CBD5E1" />
         </LinearLayout>
-    </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Bottom Composer Card (Matching SOS Livechat styling) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/livechat_composer_card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        app:cardBackgroundColor="@color/panel"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="3dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:strokeColor="#18000000"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/livechat_composer_attachment_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="14dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="14dp"
+                android:text="@string/support_livechat_no_attachment"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="6dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="6dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/livechat_attach"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="@string/support_livechat_attach"
+                    app:backgroundTint="@android:color/transparent"
+                    app:cornerRadius="999dp"
+                    app:icon="@drawable/ic_add"
+                    app:iconPadding="0dp"
+                    app:iconSize="22dp"
+                    app:iconTint="@color/text_secondary"
+                    app:strokeWidth="0dp" />
+
+                <EditText
+                    android:id="@+id/livechat_input"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="@string/support_livechat_hint"
+                    android:imeOptions="actionSend"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:maxLines="4"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/livechat_send"
+                    style="@style/Widget.ResQTap.MapControlButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="4dp"
+                    android:contentDescription="Send"
+                    app:backgroundTint="#E60067"
+                    app:cornerRadius="999dp"
+                    app:icon="@drawable/ic_send_24"
+                    app:iconPadding="0dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/white"
+                    app:strokeWidth="0dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

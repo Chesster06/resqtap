@@ -221,7 +221,6 @@ const els = {
   profileAvatarImg: document.getElementById("profileAvatarImg"),
   adminProfileSignOutBtn: document.getElementById("adminProfileSignOutBtn"),
   adminPageSignOutBtn: document.getElementById("adminPageSignOutBtn"),
-  sidebarSignOutBtn: document.getElementById("sidebarSignOutBtn"),
   sidebarProfileNavBtn: document.getElementById("sidebarProfileNavBtn"),
   sidebarProfileName: document.getElementById("sidebarProfileName"),
   sidebarProfileRole: document.getElementById("sidebarProfileRole"),
@@ -4845,7 +4844,11 @@ function detailShell(title, subtitle, body, avatar = "") {
   els.appShell.classList.add("detail-open");
   els.detailPanel.classList.add("has-content");
   els.detailPanel.classList.remove("hidden");
-  els.detailPanel.innerHTML = `
+
+  const existingContent = els.detailPanel.querySelector(".detail-content");
+  const previousScrollTop = existingContent ? existingContent.scrollTop : 0;
+
+  const newHtml = `
     ${detailResizeHandle()}
     <div class="detail-content">
       <div class="detail-header">
@@ -4861,6 +4864,18 @@ function detailShell(title, subtitle, body, avatar = "") {
       ${body}
     </div>
   `;
+
+  if (els.detailPanel.innerHTML.trim() === newHtml.trim()) {
+    return;
+  }
+
+  els.detailPanel.innerHTML = newHtml;
+
+  const newContent = els.detailPanel.querySelector(".detail-content");
+  if (newContent && previousScrollTop > 0) {
+    newContent.scrollTop = previousScrollTop;
+  }
+
   refreshIcons();
   setTimeout(refreshIcons, 20);
 }
@@ -5175,19 +5190,9 @@ function renderReportDetail(reportKey) {
       <div class="report-attachment-grid">${attachmentsHtml}</div>
     </section>
     <section class="detail-section">
-      <button class="primary-button icon-button" data-action="manage-report-case" data-report="${escapeHtml(report.key)}" type="button" style="width:100%;margin-bottom:12px;">
+      <button class="primary-button icon-button" data-action="manage-report-case" data-report="${escapeHtml(report.key)}" type="button" style="width:100%;margin-top:0;margin-bottom:0;box-sizing:border-box;">
         ${icon("clipboard-edit")}<span>Update Case Progress</span>
       </button>
-      <h3>Status Actions</h3>
-      <div class="row-actions">
-        ${REPORT_STATUSES.map((option) => `
-          <button class="small-button${option.id === report.status ? " is-current" : ""}" data-action="set-report-status" data-report="${escapeHtml(report.key)}" data-status="${escapeHtml(option.id)}" type="button">
-            ${icon(option.id === "resolved" ? "check-circle-2" : option.id === "rejected" ? "circle-x" : option.id === "reviewing" ? "clock" : option.id === "in_progress" ? "activity" : "sparkles")}
-            <span>${escapeHtml(option.label)}</span>
-          </button>
-        `).join("")}
-        <button class="small-button danger" data-action="delete-report" data-report="${escapeHtml(report.key)}" type="button">${icon("trash-2")}<span>Delete</span></button>
-      </div>
     </section>
   `;
   detailShell(report.categoryLabel || "Incident Report", `${status.label} - ${formatDate(report.createdAt)}`, body, avatarHtml(report.data, report.senderUid));
@@ -6607,6 +6612,14 @@ async function setReportStatus(reportId, status, notes = null) {
         rootUpdates[`${prefix}/reviewedBy`] = state.currentUser?.uid || "admin";
         rootUpdates[`${prefix}/reviewedByName`] = getAdminDisplayName();
 
+        rootUpdates[`${prefix}/reportId`] = reportId;
+        if (repObj?.createdAt) {
+          rootUpdates[`${prefix}/createdAt`] = repObj.createdAt;
+        }
+        if (reporterUid) {
+          rootUpdates[`${prefix}/senderUid`] = reporterUid;
+        }
+
         if (notes !== null && notes !== undefined) {
           rootUpdates[`${prefix}/description`] = notes;
           rootUpdates[`${prefix}/details`] = notes;
@@ -6633,7 +6646,24 @@ async function setReportStatus(reportId, status, notes = null) {
           rootUpdates[`users/${reporterUid}/lastIncidentReportUpdatedAt`] = serverTimestamp();
         }
 
-        await update(ref(db), rootUpdates);
+        try {
+          await update(ref(db), rootUpdates);
+        } catch (rErr) {
+          console.warn("[RTDB_FAST_SYNC_ERR]", rErr);
+        }
+
+        if (reporterUid && validPathSegment(reporterUid)) {
+          try {
+            const userUpdate = {};
+            userUpdate[`users/${reporterUid}/lastIncidentReportId`] = reportId;
+            userUpdate[`users/${reporterUid}/lastIncidentReportStatus`] = meta.id;
+            userUpdate[`users/${reporterUid}/lastIncidentReportNotes`] = notes !== null ? notes : (repObj?.description || "");
+            userUpdate[`users/${reporterUid}/lastIncidentReportUpdatedAt`] = serverTimestamp();
+            await update(ref(db), userUpdate);
+          } catch (uErr) {
+            console.warn("[RTDB_USER_SYNC_ERR]", uErr);
+          }
+        }
       }
     } catch (rErr) {
       console.warn("[RTDB_FAST_SYNC_ERR]", rErr);
@@ -7401,9 +7431,6 @@ function bindEvents() {
   }
   if (els.adminPageSignOutBtn) {
     els.adminPageSignOutBtn.addEventListener("click", handleSignOut);
-  }
-  if (els.sidebarSignOutBtn) {
-    els.sidebarSignOutBtn.addEventListener("click", handleSignOut);
   }
 
   // Dark Mode Toggle Logic

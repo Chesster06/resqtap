@@ -2732,6 +2732,9 @@ td .row-actions .small-button,
 .detail-content {
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 16px 16px 22px;
 }
 
@@ -2828,6 +2831,36 @@ body.detail-resizing {
   gap: 8px;
   padding: 13px 0;
   border-top: 1px solid var(--line);
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.detail-section .row-actions,
+.detail-status-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  box-sizing: border-box !important;
+}
+
+.detail-section .row-actions .small-button,
+.detail-status-actions .small-button {
+  flex: 1 1 calc(50% - 6px) !important;
+  min-width: 110px !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+.detail-section .row-actions .small-button.danger,
+.detail-status-actions .small-button.danger {
+  flex: 1 1 100% !important;
 }
 
 .detail-header + .detail-section {
