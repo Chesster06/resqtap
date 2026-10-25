@@ -7,7 +7,8 @@
 [![backend](https://img.shields.io/badge/backend-Firebase%20%7C%20Supabase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![build](https://img.shields.io/badge/build-Gradle%20AGP%209.x-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![status](https://img.shields.io/badge/status-active-success)](https://github.com/Chesster06/resqtap-sos-emergency-systems)
+[![status](https://img.shields.io/badge/status-active-success)](https://github.com/Chesster06/RESQTAP-SOS-Emergency-System)
+[![release](https://img.shields.io/badge/release-v1.0-blue.svg)](https://github.com/Chesster06/RESQTAP-SOS-Emergency-System)
 
 A mission-critical personal emergency SOS and rapid-response companion for Android: instant one-tap distress signaling, live GPS tracking, automated emergency contact dispatch, offline-accessible medical ID, WebRTC live voice and video calling, AI safety assistant, emergency coordination rooms, and real-time incident management.
 

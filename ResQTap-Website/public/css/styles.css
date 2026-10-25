@@ -7064,11 +7064,16 @@ body.admin-site-active .auth-card-box {
   letter-spacing: -0.01em !important;
 }
 
-.auth-card-desc {
-  font-size: 0.85rem !important;
-  color: #64748B !important;
+.auth-card-desc,
+.auth-card-box .auth-card-desc,
+body.dark-mode .auth-card-box .auth-card-desc,
+body.dark-mode.admin-site-active .auth-card-box .auth-card-desc {
+  font-size: 0.9rem !important;
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
   margin: 6px 0 0 !important;
-  font-weight: 500;
+  font-weight: 500 !important;
+  opacity: 1 !important;
 }
 
 .auth-fields-stack {
@@ -7084,10 +7089,23 @@ body.admin-site-active .auth-card-box {
   text-align: left;
 }
 
-.auth-input-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #334155;
+.auth-input-label,
+.auth-input-label span,
+.auth-card-box .auth-input-label,
+.auth-card-box .auth-input-label span,
+#loginForm .auth-input-label,
+#loginForm .auth-input-label span,
+body.dark-mode .auth-card-box .auth-input-label,
+body.dark-mode .auth-card-box .auth-input-label span,
+body.dark-mode.admin-site-active #loginForm .auth-input-label,
+body.dark-mode.admin-site-active #loginForm .auth-input-label span {
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  color: #1E293B !important;
+  -webkit-text-fill-color: #1E293B !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-block;
 }
 
 .auth-field-box {
@@ -7100,23 +7118,31 @@ body.admin-site-active .auth-card-box {
 .auth-field-box input,
 #loginForm #emailInput,
 #loginForm #passwordInput,
+.auth-card-box input[type="text"],
+.auth-card-box input[type="password"],
 body.admin-site-active #loginForm #emailInput,
-body.admin-site-active #loginForm #passwordInput {
+body.admin-site-active #loginForm #passwordInput,
+body.dark-mode #loginForm #emailInput,
+body.dark-mode #loginForm #passwordInput,
+body.dark-mode.admin-site-active #loginForm #emailInput,
+body.dark-mode.admin-site-active #loginForm #passwordInput {
   width: 100% !important;
   height: 44px !important;
   min-height: 44px !important;
   padding: 0 14px !important;
   background-color: #FFFFFF !important;
   background: #FFFFFF !important;
-  border: 1.5px solid #E2E8F0 !important;
+  border: 1.5px solid #CBD5E1 !important;
   border-radius: 9px !important;
-  font-size: 0.9rem !important;
-  color: #1E293B !important;
-  -webkit-text-fill-color: #1E293B !important;
+  font-size: 0.92rem !important;
+  font-weight: 500 !important;
+  color: #0F172A !important;
+  -webkit-text-fill-color: #0F172A !important;
   box-shadow: none !important;
   outline: none !important;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box !important;
+  opacity: 1 !important;
 }
 
 .auth-field-box.password-box input,
@@ -7127,7 +7153,7 @@ body.admin-site-active #loginForm #passwordInput {
 .auth-field-box input:hover,
 #loginForm #emailInput:hover,
 #loginForm #passwordInput:hover {
-  border-color: #CBD5E1 !important;
+  border-color: #94A3B8 !important;
 }
 
 .auth-field-box input:focus,
@@ -7139,10 +7165,15 @@ body.admin-site-active #loginForm #passwordInput {
 
 .auth-field-box input::placeholder,
 #loginForm #emailInput::placeholder,
-#loginForm #passwordInput::placeholder {
-  color: #94A3B8 !important;
-  -webkit-text-fill-color: #94A3B8 !important;
-  font-weight: 400;
+#loginForm #passwordInput::placeholder,
+body.dark-mode #loginForm #emailInput::placeholder,
+body.dark-mode #loginForm #passwordInput::placeholder,
+body.dark-mode.admin-site-active #loginForm #emailInput::placeholder,
+body.dark-mode.admin-site-active #loginForm #passwordInput::placeholder {
+  color: #64748B !important;
+  -webkit-text-fill-color: #64748B !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
 }
 
 .auth-eye-btn {
@@ -7181,14 +7212,26 @@ body.admin-site-active #loginForm #passwordInput {
   font-size: 0.8rem;
 }
 
-.auth-remember-me {
+.auth-remember-me,
+.auth-remember-me span,
+.auth-card-box .auth-remember-me,
+.auth-card-box .auth-remember-me span,
+#loginForm .auth-remember-me,
+#loginForm .auth-remember-me span,
+body.dark-mode .auth-card-box .auth-remember-me,
+body.dark-mode .auth-card-box .auth-remember-me span,
+body.dark-mode.admin-site-active #loginForm .auth-remember-me,
+body.dark-mode.admin-site-active #loginForm .auth-remember-me span {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #64748B;
+  color: #1E293B !important;
+  -webkit-text-fill-color: #1E293B !important;
   cursor: pointer;
   user-select: none;
-  font-size: 0.82rem;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
 }
 
 .auth-remember-me input[type="checkbox"],
@@ -7211,15 +7254,15 @@ body.admin-site-active #loginForm #passwordInput {
 }
 
 .auth-forgot-link {
-  color: #E60067;
+  color: #E60067 !important;
   text-decoration: none;
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
   transition: color 0.15s;
 }
 
 .auth-forgot-link:hover {
-  color: #B80053;
+  color: #B80053 !important;
   text-decoration: underline;
 }
 
@@ -7292,19 +7335,30 @@ body.admin-site-active #loginButton.auth-login-action-btn:disabled {
   justify-content: center;
 }
 
-.auth-back-to-site {
+.auth-back-to-site,
+.auth-back-to-site span,
+.auth-card-box .auth-back-to-site,
+.auth-card-box .auth-back-to-site span,
+body.dark-mode .auth-card-box .auth-back-to-site,
+body.dark-mode .auth-card-box .auth-back-to-site span,
+body.dark-mode.admin-site-active .auth-card-box .auth-back-to-site,
+body.dark-mode.admin-site-active .auth-card-box .auth-back-to-site span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #94A3B8;
-  font-size: 0.8rem;
-  font-weight: 600;
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
   text-decoration: none;
   transition: color 0.15s;
+  opacity: 1 !important;
 }
 
-.auth-back-to-site:hover {
-  color: #E60067;
+.auth-back-to-site:hover,
+.auth-back-to-site:hover span {
+  color: #E60067 !important;
+  -webkit-text-fill-color: #E60067 !important;
 }
 
 .auth-back-to-site svg {
@@ -9600,30 +9654,9 @@ body.dark-mode .admin-name-title {
   margin: 0;
 }
 
-/* Photo action buttons bar */
-.admin-photo-actions-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-
-.admin-photo-actions-row .photo-upload-btn {
-  cursor: pointer;
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 8px;
-}
-
-.admin-photo-actions-row .photo-hint-text {
-  font-size: 12px;
-  color: var(--text-muted, #94A3B8);
+/* Photo action bar - hidden as camera badge is on avatar */
+.admin-photo-btn-bar {
+  display: none !important;
 }
 
 .danger-tint {
@@ -9968,52 +10001,6 @@ body.dark-mode .sidebar:hover .sidebar-username {
 .sidebar .sidebar-userrole,
 .sidebar:hover .sidebar-userrole {
   display: none !important;
-}
-
-/* Sidebar Sign Out Button (positioned right below Profile at bottom of sidebar) */
-.sidebar .sidebar-signout-btn {
-  width: 44px !important;
-  max-width: 44px !important;
-  height: 44px !important;
-  min-height: 44px !important;
-  padding: 0 !important;
-  margin: 0 auto 4px !important;
-  justify-content: center !important;
-  align-items: center !important;
-  display: flex !important;
-  border-radius: 12px;
-}
-
-.sidebar .sidebar-signout-btn span {
-  display: none !important;
-}
-
-.sidebar .sidebar-signout-btn svg,
-.sidebar .sidebar-signout-btn i {
-  margin-right: 0 !important;
-}
-
-.sidebar:hover .sidebar-signout-btn {
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: 40px !important;
-  padding: 0 14px !important;
-  flex-direction: row !important;
-  justify-content: flex-start !important;
-  gap: 10px !important;
-  margin: 0 0 4px !important;
-}
-
-.sidebar:hover .sidebar-signout-btn span {
-  display: inline-block !important;
-  font-size: 0.88rem !important;
-  font-weight: 700 !important;
-}
-
-.sidebar:hover .sidebar-signout-btn svg,
-.sidebar:hover .sidebar-signout-btn i {
-  margin-right: 12px !important;
 }
 
 /* Account Session & Sign Out Card on Profile Page */
