@@ -1377,11 +1377,10 @@ async function syncFromSupabase() {
 
     // 3. Highlights
     const { data: hl } = await supabase.from("highlights").select("*").order("display_order", { ascending: true });
-    if (Array.isArray(hl) && hl.length > 0) {
-      const hlMap = {};
+    if (Array.isArray(hl) && hl.length > 0 && (!state.highlights || Object.keys(state.highlights).length === 0)) {
       const hlSyncUpdates = {};
       hl.forEach((h) => {
-        const item = {
+        hlSyncUpdates[`highlights/${h.id}`] = {
           id: h.id,
           title: h.title,
           imageUrl: h.image_url,
@@ -1389,12 +1388,7 @@ async function syncFromSupabase() {
           order: h.display_order,
           active: h.active !== false
         };
-        hlMap[h.id] = item;
-        if (!state.highlights || !state.highlights[h.id]) {
-          hlSyncUpdates[`highlights/${h.id}`] = item;
-        }
       });
-      state.highlights = { ...hlMap, ...state.highlights };
       if (Object.keys(hlSyncUpdates).length > 0) {
         update(ref(db), hlSyncUpdates).catch((e) => console.warn("Auto-sync highlights to RTDB:", e));
       }
@@ -1626,8 +1620,8 @@ function startDataListeners() {
     cleanupExpiredAiChats().catch((error) => console.warn(error));
   });
   subscribe("highlights", (value) => {
-    const rtdbHl = asRecord(value);
-    state.highlights = { ...(state.highlights || {}), ...rtdbHl };
+    state.highlights = asRecord(value);
+    renderHighlights();
   });
   subscribe("adminCalls/incoming", (value) => {
     handleAdminIncomingCall(value);
