@@ -2887,7 +2887,7 @@ public class NearbyHospitalActivity extends BaseActivity implements OnMapReadyCa
             bgColor = Color.parseColor("#E65100"); // Jingga Bomba
             iconRes = R.drawable.logo_bomba;
         } else {
-            bgColor = Color.parseColor("#E60067"); // ResQTap Brand Pink
+            bgColor = Color.parseColor("#E53935"); // Merah Hospital
             iconRes = R.drawable.logo_kkm;
         }
 

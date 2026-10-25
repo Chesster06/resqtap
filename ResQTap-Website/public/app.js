@@ -8989,11 +8989,11 @@ elsVc.sendMessageBtn.addEventListener("click", (e) => {
 
     if (type === "report") {
       return window._LeafletMap.divIcon({
-        className: "resq-leaflet-report-marker",
-        html: `<div class="lm-report-3d-pin-wrap"><span class="lm-report-pin-pulse"></span><img src="/assets/images/ic_marker_resqtap_pink.png" class="lm-report-pin-img" alt="Incident Report"></div>`,
-        iconSize: [36, 52],
-        iconAnchor: [18, 50],
-        popupAnchor: [0, -48]
+        className: "",
+        html: `<div class="lm-marker-wrap lm-marker-report"><div class="lm-avatar-frame"><div class="lm-icon-report-inner">!</div></div><span class="lm-marker-dot lm-dot-report"></span></div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -22]
       });
     }
 

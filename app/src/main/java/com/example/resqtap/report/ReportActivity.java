@@ -562,31 +562,6 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
         }
     }
 
-    private BitmapDescriptor incidentMarkerDesc;
-
-    /** Muat atau jana BitmapDescriptor pin kecemasan tema pink ResQTap dengan saiz padat piawai (34dp x 50dp). */
-    private BitmapDescriptor getIncidentMarkerDescriptor() {
-        if (incidentMarkerDesc == null) {
-            try {
-                BitmapFactory.Options opts = new BitmapFactory.Options();
-                opts.inScaled = false;
-                Bitmap bmp = BitmapFactory.decodeResource(getResources(), R.drawable.ic_marker_resqtap_pink, opts);
-                if (bmp != null) {
-                    float density = getResources().getDisplayMetrics().density;
-                    int targetW = Math.max(1, Math.round(34 * density));
-                    int targetH = Math.max(1, Math.round(50 * density));
-                    Bitmap scaled = Bitmap.createScaledBitmap(bmp, targetW, targetH, true);
-                    incidentMarkerDesc = BitmapDescriptorFactory.fromBitmap(scaled);
-                    if (scaled != bmp) bmp.recycle();
-                }
-            } catch (Exception ignored) {}
-            if (incidentMarkerDesc == null) {
-                incidentMarkerDesc = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE);
-            }
-        }
-        return incidentMarkerDesc;
-    }
-
     /** Memilih atau memindahkan lokasi insiden mengikut posisi pin baharu. */
     private void applySelectedLatLng(LatLng latLng) {
         if (latLng == null) return;
@@ -599,13 +574,9 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
                 marker = map.addMarker(new MarkerOptions()
                         .position(incidentLatLng)
                         .draggable(true)
-                        .icon(getIncidentMarkerDescriptor())
-                        .anchor(0.5f, 0.922f)
                         .title(getString(R.string.report_location_title)));
             } else {
                 marker.setPosition(incidentLatLng);
-                marker.setIcon(getIncidentMarkerDescriptor());
-                marker.setAnchor(0.5f, 0.922f);
                 marker.setDraggable(true);
             }
         }
@@ -671,13 +642,9 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
                 marker = map.addMarker(new MarkerOptions()
                         .position(incidentLatLng)
                         .draggable(true)
-                        .icon(getIncidentMarkerDescriptor())
-                        .anchor(0.5f, 0.922f)
                         .title(getString(R.string.report_location_title)));
             } else {
                 marker.setPosition(incidentLatLng);
-                marker.setIcon(getIncidentMarkerDescriptor());
-                marker.setAnchor(0.5f, 0.922f);
                 marker.setDraggable(true);
             }
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(incidentLatLng, 16f));
