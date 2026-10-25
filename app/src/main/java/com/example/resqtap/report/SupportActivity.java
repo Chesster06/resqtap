@@ -2,7 +2,7 @@ package com.example.resqtap.report;
 import com.example.resqtap.R;
 
 import com.example.resqtap.app.BaseActivity;
-import com.example.resqtap.chat.LivechatActivity;
+import com.example.resqtap.chat.ChatActivity;
 import com.example.resqtap.utils.ThemeUtils;
 
 import android.content.Intent;
@@ -40,7 +40,7 @@ public class SupportActivity extends BaseActivity {
         View livechat = findViewById(R.id.card_livechat_entry);
         if (livechat != null) {
             livechat.setOnClickListener(v -> {
-                Intent intent = new Intent(this, com.example.resqtap.chat.LivechatActivity.class);
+                Intent intent = new Intent(this, com.example.resqtap.chat.ChatActivity.class);
                 startActivity(intent);
             });
         }
