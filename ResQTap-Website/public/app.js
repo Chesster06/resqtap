@@ -4914,10 +4914,8 @@ async function sendTicketReply() {
 
   try {
     const thread = getTicketThreads().find((t) => t.uid === uid);
-    const store = (thread && thread.store) || "ticketChats";
-    const messageRef = push(ref(db, `${store}/${uid}/messages`));
-    const messageId = messageRef.key;
-    if (!messageId) throw new Error("Unable to create message id.");
+    const targetStore = (thread && thread.store) || "ticketChats";
+    const stores = Array.from(new Set([targetStore, "ticketChats", "supportChats"]));
 
     const adminName = currentAdminName();
     let attachmentPayload = null;
@@ -4941,21 +4939,18 @@ async function sendTicketReply() {
     if (attachmentPayload) chatMessage.attachment = attachmentPayload;
 
     const lastMessage = message || `Attachment: ${attachmentPayload.name || "file"}`;
-    const updates = {
-      [`${store}/${uid}/messages/${messageId}`]: chatMessage,
-      [`${store}/${uid}/meta/status`]: "answered",
-      [`${store}/${uid}/meta/lastMessage`]: lastMessage,
-      [`${store}/${uid}/meta/lastSender`]: "admin",
-      [`${store}/${uid}/meta/lastAdminUid`]: state.currentUser ? state.currentUser.uid : "",
-      [`${store}/${uid}/meta/lastAdminName`]: adminName,
-      [`${store}/${uid}/meta/updatedAt`]: serverTimestamp()
-    };
-    if (store !== "ticketChats") {
-      updates[`ticketChats/${uid}/messages/${messageId}`] = chatMessage;
-      updates[`ticketChats/${uid}/meta/status`] = "answered";
-      updates[`ticketChats/${uid}/meta/lastMessage`] = lastMessage;
-      updates[`ticketChats/${uid}/meta/lastSender`] = "admin";
-      updates[`ticketChats/${uid}/meta/updatedAt`] = serverTimestamp();
+    const updates = {};
+    for (const s of stores) {
+      const msgRef = push(ref(db, `${s}/${uid}/messages`));
+      if (msgRef.key) {
+        updates[`${s}/${uid}/messages/${msgRef.key}`] = chatMessage;
+      }
+      updates[`${s}/${uid}/meta/status`] = "answered";
+      updates[`${s}/${uid}/meta/lastMessage`] = lastMessage;
+      updates[`${s}/${uid}/meta/lastSender`] = "admin";
+      updates[`${s}/${uid}/meta/lastAdminUid`] = state.currentUser ? state.currentUser.uid : "";
+      updates[`${s}/${uid}/meta/lastAdminName`] = adminName;
+      updates[`${s}/${uid}/meta/updatedAt`] = serverTimestamp();
     }
 
     await update(ref(db), updates);
@@ -4975,24 +4970,33 @@ async function sendTicketReply() {
 async function claimTicketThread(uid, store = "ticketChats") {
   if (!validPathSegment(uid)) return;
   const adminName = currentAdminName();
-  const updates = {
-    [`${store}/${uid}/meta/claimedAt`]: serverTimestamp(),
-    [`${store}/${uid}/meta/claimedBy`]: state.currentUser ? state.currentUser.uid : "",
-    [`${store}/${uid}/meta/claimedByName`]: adminName,
-    [`${store}/${uid}/meta/claimNotice`]: LIVECHAT_CLAIM_NOTICE,
-    [`${store}/${uid}/meta/status`]: "in_progress",
-    [`${store}/${uid}/meta/updatedAt`]: serverTimestamp()
+  const thread = getTicketThreads().find((t) => t.uid === uid);
+  const targetStore = (thread && thread.store) || store || "ticketChats";
+  const stores = Array.from(new Set([targetStore, "ticketChats", "supportChats"]));
+
+  const updates = {};
+  const sysMsg = {
+    text: LIVECHAT_CLAIM_NOTICE,
+    sender: "system",
+    senderUid: "system",
+    senderName: "System",
+    createdAt: serverTimestamp()
   };
-  const msgRef = push(ref(db, `${store}/${uid}/messages`));
-  if (msgRef.key) {
-    updates[`${store}/${uid}/messages/${msgRef.key}`] = {
-      text: LIVECHAT_CLAIM_NOTICE,
-      sender: "system",
-      senderUid: "system",
-      senderName: "System",
-      createdAt: serverTimestamp()
-    };
+
+  for (const s of stores) {
+    updates[`${s}/${uid}/meta/claimedAt`] = serverTimestamp();
+    updates[`${s}/${uid}/meta/claimedBy`] = state.currentUser ? state.currentUser.uid : "";
+    updates[`${s}/${uid}/meta/claimedByName`] = adminName;
+    updates[`${s}/${uid}/meta/claimNotice`] = LIVECHAT_CLAIM_NOTICE;
+    updates[`${s}/${uid}/meta/status`] = "in_progress";
+    updates[`${s}/${uid}/meta/updatedAt`] = serverTimestamp();
+
+    const msgRef = push(ref(db, `${s}/${uid}/messages`));
+    if (msgRef.key) {
+      updates[`${s}/${uid}/messages/${msgRef.key}`] = sysMsg;
+    }
   }
+
   await update(ref(db), updates);
   showToast("Ticket claimed.");
 }
@@ -5000,23 +5004,32 @@ async function claimTicketThread(uid, store = "ticketChats") {
 async function resolveSelectedTicket(uid = state.selectedTicketUid, store = "ticketChats") {
   if (!validPathSegment(uid)) return;
   const adminName = currentAdminName();
-  const updates = {
-    [`${store}/${uid}/meta/status`]: "resolved",
-    [`${store}/${uid}/meta/resolvedAt`]: serverTimestamp(),
-    [`${store}/${uid}/meta/resolvedBy`]: state.currentUser ? state.currentUser.uid : "",
-    [`${store}/${uid}/meta/resolvedByName`]: adminName,
-    [`${store}/${uid}/meta/updatedAt`]: serverTimestamp()
+  const thread = getTicketThreads().find((t) => t.uid === uid);
+  const targetStore = (thread && thread.store) || store || "ticketChats";
+  const stores = Array.from(new Set([targetStore, "ticketChats", "supportChats"]));
+
+  const updates = {};
+  const sysMsg = {
+    text: "The live support session has been marked resolved and closed by Admin.",
+    sender: "system",
+    senderUid: "system",
+    senderName: "System",
+    createdAt: serverTimestamp()
   };
-  const msgRef = push(ref(db, `${store}/${uid}/messages`));
-  if (msgRef.key) {
-    updates[`${store}/${uid}/messages/${msgRef.key}`] = {
-      text: "The live support session has been marked resolved and closed by Admin.",
-      sender: "system",
-      senderUid: "system",
-      senderName: "System",
-      createdAt: serverTimestamp()
-    };
+
+  for (const s of stores) {
+    updates[`${s}/${uid}/meta/status`] = "resolved";
+    updates[`${s}/${uid}/meta/resolvedAt`] = serverTimestamp();
+    updates[`${s}/${uid}/meta/resolvedBy`] = state.currentUser ? state.currentUser.uid : "";
+    updates[`${s}/${uid}/meta/resolvedByName`] = adminName;
+    updates[`${s}/${uid}/meta/updatedAt`] = serverTimestamp();
+
+    const msgRef = push(ref(db, `${s}/${uid}/messages`));
+    if (msgRef.key) {
+      updates[`${s}/${uid}/messages/${msgRef.key}`] = sysMsg;
+    }
   }
+
   await update(ref(db), updates);
   showToast("Ticket marked resolved.");
 }
@@ -5027,10 +5040,8 @@ async function deleteSelectedTicket(uid = state.selectedTicketUid, store = "tick
   const displayName = thread ? thread.name : "this user";
   if (!window.confirm(`Padam tiket livechat untuk "${displayName}"? Seluruh rekod perbualan ini akan dipadamkan.`)) return;
   try {
-    await remove(ref(db, `${store}/${uid}`));
-    if (store !== "ticketChats") {
-      await remove(ref(db, `ticketChats/${uid}`));
-    }
+    await remove(ref(db, `ticketChats/${uid}`));
+    await remove(ref(db, `supportChats/${uid}`));
     state.selectedTicketUid = "";
     showToast("Tiket perbualan telah dipadam.");
     renderTicketLivechat();
