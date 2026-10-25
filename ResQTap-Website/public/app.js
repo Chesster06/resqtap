@@ -4975,26 +4975,12 @@ async function claimTicketThread(uid, store = "ticketChats") {
   const stores = Array.from(new Set([targetStore, "ticketChats", "supportChats"]));
 
   const updates = {};
-  const sysMsg = {
-    text: LIVECHAT_CLAIM_NOTICE,
-    sender: "system",
-    senderUid: "system",
-    senderName: "System",
-    createdAt: serverTimestamp()
-  };
-
   for (const s of stores) {
     updates[`${s}/${uid}/meta/claimedAt`] = serverTimestamp();
     updates[`${s}/${uid}/meta/claimedBy`] = state.currentUser ? state.currentUser.uid : "";
     updates[`${s}/${uid}/meta/claimedByName`] = adminName;
-    updates[`${s}/${uid}/meta/claimNotice`] = LIVECHAT_CLAIM_NOTICE;
     updates[`${s}/${uid}/meta/status`] = "in_progress";
     updates[`${s}/${uid}/meta/updatedAt`] = serverTimestamp();
-
-    const msgRef = push(ref(db, `${s}/${uid}/messages`));
-    if (msgRef.key) {
-      updates[`${s}/${uid}/messages/${msgRef.key}`] = sysMsg;
-    }
   }
 
   await update(ref(db), updates);

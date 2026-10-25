@@ -733,6 +733,7 @@ public class ChatActivity extends BaseActivity {
                         String attName = safe(attSnap.child("name").getValue(String.class));
                         String attMime = safe(attSnap.child("mimeType").getValue(String.class));
                         if (text.isEmpty() && attUrl.isEmpty()) continue;
+                        if (text.toLowerCase(Locale.ROOT).contains("claimed your ticket")) continue;
 
                         long createdAt = snapshotLong(child.child("createdAt"));
                         if (createdAt <= 0L) {
@@ -787,6 +788,7 @@ public class ChatActivity extends BaseActivity {
                         String attName = safe(attSnap.child("name").getValue(String.class));
                         String attMime = safe(attSnap.child("mimeType").getValue(String.class));
                         if (text.isEmpty() && attUrl.isEmpty()) continue;
+                        if (text.toLowerCase(Locale.ROOT).contains("claimed your ticket")) continue;
 
                         String sender = safe(child.child("sender").getValue(String.class));
                         String senderName = safe(child.child("senderName").getValue(String.class));
@@ -2023,6 +2025,9 @@ public class ChatActivity extends BaseActivity {
 
     private TextView addMessageBubble(ChatMessage message) {
         if ("system".equalsIgnoreCase(message.role)) {
+            if (message.content != null && message.content.toLowerCase(Locale.ROOT).contains("claimed your ticket")) {
+                return null;
+            }
             addSystemNoticeBubble(message.content);
             return null;
         }

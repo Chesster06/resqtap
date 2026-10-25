@@ -378,6 +378,9 @@ public class LivechatActivity extends BaseActivity {
                     continue;
                 }
             }
+            if (text.toLowerCase(Locale.ROOT).contains("claimed your ticket")) {
+                continue;
+            }
 
             String sender = safe(child.child("sender").getValue(String.class));
             String senderUid = safe(child.child("senderUid").getValue(String.class));
