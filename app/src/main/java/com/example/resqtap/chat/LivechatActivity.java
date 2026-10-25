@@ -173,6 +173,9 @@ public class LivechatActivity extends BaseActivity {
     private void bindViews() {
         btnBack = findViewById(R.id.btn_back);
         btnDeleteChat = findViewById(R.id.btn_delete_livechat);
+        if (btnDeleteChat != null) {
+            btnDeleteChat.setVisibility(View.GONE);
+        }
         btnCall = findViewById(R.id.btn_call_from_livechat);
         tvLivechatTitle = findViewById(R.id.tv_livechat_title);
         tvLivechatSubtitle = findViewById(R.id.tv_livechat_subtitle);
@@ -204,10 +207,6 @@ public class LivechatActivity extends BaseActivity {
     private void setupListeners() {
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
-        }
-
-        if (btnDeleteChat != null) {
-            btnDeleteChat.setOnClickListener(v -> confirmDeleteChat());
         }
 
         if (btnCall != null) {
@@ -525,23 +524,6 @@ public class LivechatActivity extends BaseActivity {
         }
 
         row.addView(bubble);
-
-        // Long click to delete message
-        bubble.setOnLongClickListener(v -> {
-            new androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Padam Mesej")
-                    .setMessage("Adakah anda pasti ingin memadam mesej ini?")
-                    .setPositiveButton("Padam", (dialog, which) -> {
-                        if (chatRef != null && messageKey != null) {
-                            chatRef.child("messages").child(messageKey).removeValue();
-                            Toast.makeText(this, "Mesej dipadam", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .setNegativeButton("Batal", null)
-                    .show();
-            return true;
-        });
-
         messagesContainer.addView(row);
     }
 

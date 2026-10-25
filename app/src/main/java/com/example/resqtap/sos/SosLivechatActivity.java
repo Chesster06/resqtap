@@ -185,7 +185,7 @@ public class SosLivechatActivity extends BaseActivity {
         btnSend = findViewById(R.id.btn_sos_chat_send);
         View btnDeleteChat = findViewById(R.id.btn_delete_sos_chat);
         if (btnDeleteChat != null) {
-            btnDeleteChat.setOnClickListener(v -> confirmDeleteChat());
+            btnDeleteChat.setVisibility(View.GONE);
         }
     }
 
@@ -455,20 +455,6 @@ public class SosLivechatActivity extends BaseActivity {
         }
 
         row.addView(bubble);
-        bubble.setOnLongClickListener(v -> {
-            new androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Padam Mesej")
-                    .setMessage("Adakah anda pasti ingin memadam mesej ini?")
-                    .setPositiveButton("Padam", (dialog, which) -> {
-                        if (chatRef != null && messageKey != null) {
-                            chatRef.child("messages").child(messageKey).removeValue();
-                            Toast.makeText(this, "Mesej dipadam", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .setNegativeButton("Batal", null)
-                    .show();
-            return true;
-        });
         messagesContainer.addView(row);
     }
 

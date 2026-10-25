@@ -4278,9 +4278,6 @@ function renderSosLivechat() {
             <div class="livechat-bubble" style="${!isAdmin ? "background:#FFE4EE !important; color:#9F1239 !important; border:1px solid #FECDD3 !important;" : ""}">
               <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
                 <span class="livechat-sender" style="font-weight:700; ${!isAdmin ? "color:#E11D48 !important;" : ""}">${escapeHtml(senderName)}</span>
-                <span class="msg-delete-btn" data-action="delete-sos-msg" data-msg-id="${escapeHtml(m.id)}" title="Padam mesej" role="button" tabindex="0">
-                  ${icon("trash-2")}
-                </span>
               </div>
               <p style="margin:4px 0 6px 0; font-size:14.5px; line-height:1.45; word-break:break-word;">${escapeHtml(m.text)}</p>
               <time style="font-size:11px; opacity:0.75; display:block; text-align:right;">${escapeHtml(timeStr)}</time>
@@ -4379,41 +4376,6 @@ async function deleteSosLivechatSession(sessionParam) {
   } catch (err) {
     console.error("Gagal memadam sesi SOS Livechat:", err);
     showToast("Gagal memadam sesi: " + (err.message || err));
-  }
-}
-
-async function deleteSingleSosMessage(msgId) {
-  if (!msgId) return;
-  const allSessions = getSosLivechatSessions();
-  const session = allSessions.find((s) => s.sessionId === state.selectedSosSessionId || (s.allSessionIds && s.allSessionIds.includes(state.selectedSosSessionId)));
-  if (!session) return;
-
-  if (!window.confirm("Padam mesej ini?")) return;
-
-  try {
-    const updates = {};
-    const chatKey = session.chatKey || session.senderUid;
-    if (chatKey) {
-      updates[`sosChats/${chatKey}/messages/${msgId}`] = null;
-    }
-    if (session.allAlerts && session.allAlerts.length) {
-      session.allAlerts.forEach((item) => {
-        if (item.chatKey) {
-          updates[`sosChats/${item.chatKey}/messages/${msgId}`] = null;
-        } else if (item.roomId && item.alertId && item.roomId !== "DIRECT") {
-          updates[`rooms/${item.roomId}/sosAlerts/${item.alertId}/chat/messages/${msgId}`] = null;
-        }
-      });
-    } else if (session.roomId && session.alertId && session.roomId !== "DIRECT") {
-      updates[`rooms/${session.roomId}/sosAlerts/${session.alertId}/chat/messages/${msgId}`] = null;
-    }
-
-    await update(ref(db), updates);
-    showToast("Mesej telah dipadam.");
-    renderSosLivechat();
-  } catch (err) {
-    console.error("Gagal memadam mesej:", err);
-    showToast("Gagal memadam: " + (err.message || err));
   }
 }
 
@@ -5017,19 +4979,6 @@ async function deleteSelectedTicket(uid = state.selectedTicketUid, store = "tick
   } catch (err) {
     console.error("Gagal memadam tiket:", err);
     showToast("Gagal memadam tiket: " + (err.message || err));
-  }
-}
-
-async function deleteSingleTicketMessage(msgId, store = "ticketChats") {
-  const uid = state.selectedTicketUid;
-  if (!validPathSegment(uid) || !msgId) return;
-  if (!window.confirm("Padam mesej ini?")) return;
-  try {
-    await remove(ref(db, `${store}/${uid}/messages/${msgId}`));
-    showToast("Mesej tiket dipadam.");
-  } catch (err) {
-    console.error("Gagal memadam mesej tiket:", err);
-    showToast("Gagal memadam mesej tiket.");
   }
 }
 
@@ -6208,21 +6157,6 @@ async function deleteSelectedResolvedChat() {
   } catch (err) {
     console.error("Gagal memadam livechat:", err);
     showToast("Gagal memadam livechat: " + (err.message || err));
-  }
-}
-
-async function deleteSingleLivechatMessage(msgId) {
-  const uid = state.selectedChatUid;
-  if (!validPathSegment(uid) || !msgId) return;
-  if (!window.confirm("Padam mesej ini?")) return;
-
-  try {
-    await remove(ref(db, `supportChats/${uid}/messages/${msgId}`));
-    showToast("Mesej telah dipadam.");
-    renderLivechat();
-  } catch (err) {
-    console.error("Gagal memadam mesej:", err);
-    showToast("Gagal memadam: " + (err.message || err));
   }
 }
 
@@ -7728,16 +7662,6 @@ function handleAction(button) {
       }
       return;
     }
-    if (action === "delete-sos-msg") {
-      if (event) event.stopPropagation();
-      deleteSingleSosMessage(button.dataset.msgId);
-      return;
-    }
-    if (action === "delete-livechat-msg") {
-      if (event) event.stopPropagation();
-      deleteSingleLivechatMessage(button.dataset.msgId);
-      return;
-    }
     if (action === "select-ticket") {
       const ticketUid = button.dataset.ticketUid || "";
       if (state.selectedTicketUid !== ticketUid) clearTicketAttachment();
@@ -7754,11 +7678,6 @@ function handleAction(button) {
         state.selectedTicketUid = targetUid;
         deleteSelectedTicket();
       }
-      return;
-    }
-    if (action === "delete-ticket-msg") {
-      if (event) event.stopPropagation();
-      deleteSingleTicketMessage(button.dataset.msgId, button.dataset.store);
       return;
     }
     if (action === "clear-detail") state.selected = null;
