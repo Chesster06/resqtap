@@ -275,14 +275,13 @@ h3 {
 #loginForm input {
   width: 100%;
   min-height: 46px;
-  border: 1.5px solid #EEF0F4 !important;
+  border: 1.5px solid #EEF0F4;
   border-radius: 12px;
   padding: 0 14px;
-  background-color: #F6F7FB !important;
-  background: #F6F7FB !important;
-  color: #1C1E21 !important;
-  -webkit-text-fill-color: #1C1E21 !important;
-  caret-color: #E60067 !important;
+  background-color: #F6F7FB;
+  background: #F6F7FB;
+  color: #1C1E21;
+  caret-color: #E60067;
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
@@ -7896,6 +7895,14 @@ body.dark-mode.admin-site-active .category-tab.is-active {
 }
 
 /* Forms and Inputs in Dark Mode */
+.dark-mode .field input,
+.dark-mode .field textarea,
+.dark-mode .field select,
+.dark-mode .inline-form input,
+.dark-mode .page-size-field select,
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select,
 body.dark-mode .field input,
 body.dark-mode .field textarea,
 body.dark-mode .field select,
@@ -7905,10 +7912,58 @@ body.dark-mode.admin-site-active .field input,
 body.dark-mode.admin-site-active .field textarea,
 body.dark-mode.admin-site-active .field select,
 body.dark-mode.admin-site-active .inline-form input,
-body.dark-mode.admin-site-active .page-size-field select {
+body.dark-mode.admin-site-active .page-size-field select,
+body.dark-mode.admin-site-active input,
+body.dark-mode.admin-site-active textarea,
+body.dark-mode.admin-site-active select {
   background: #141C2C !important;
+  background-color: #141C2C !important;
   border-color: #243048 !important;
   color: #F9FAFB !important;
+  -webkit-text-fill-color: #F9FAFB !important;
+  caret-color: #E60067 !important;
+}
+
+.dark-mode .field input::placeholder,
+.dark-mode .field textarea::placeholder,
+.dark-mode .inline-form input::placeholder,
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder,
+body.dark-mode .field input::placeholder,
+body.dark-mode .field textarea::placeholder,
+body.dark-mode .inline-form input::placeholder,
+body.dark-mode.admin-site-active .field input::placeholder,
+body.dark-mode.admin-site-active .field textarea::placeholder,
+body.dark-mode.admin-site-active input::placeholder,
+body.dark-mode.admin-site-active textarea::placeholder {
+  color: #64748B !important;
+  -webkit-text-fill-color: #64748B !important;
+}
+
+.dark-mode input:-webkit-autofill,
+.dark-mode input:-webkit-autofill:hover,
+.dark-mode input:-webkit-autofill:focus,
+.dark-mode textarea:-webkit-autofill,
+.dark-mode select:-webkit-autofill,
+body.dark-mode input:-webkit-autofill,
+body.dark-mode input:-webkit-autofill:hover,
+body.dark-mode input:-webkit-autofill:focus,
+body.dark-mode textarea:-webkit-autofill,
+body.dark-mode select:-webkit-autofill {
+  -webkit-text-fill-color: #F9FAFB !important;
+  -webkit-box-shadow: 0 0 0 1000px #141C2C inset !important;
+  box-shadow: 0 0 0 1000px #141C2C inset !important;
+  border-color: #E60067 !important;
+  caret-color: #E60067 !important;
+}
+
+.dark-mode .field span,
+.dark-mode label span,
+body.dark-mode .field span,
+body.dark-mode label span,
+body.dark-mode.admin-site-active .field span,
+body.dark-mode.admin-site-active label span {
+  color: #F1F5F9 !important;
 }
 
 body.dark-mode .field input:focus,
