@@ -116,10 +116,10 @@ GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 Execute SQL migration scripts in your Supabase SQL Editor:
 ```bash
 # Core schema: profiles, medical_cards, reports, rooms
-supabase_schema.sql
+database/migrations/supabase_schema.sql
 
 # Auxiliary tables: highlights, notifications, system_metadata
-supabase_additional_tables.sql
+database/migrations/supabase_additional_tables.sql
 ```
 
 ### 3. Build & Run Android Application
@@ -193,11 +193,14 @@ npm run watch:deploy
 ├── firebase-functions/                 # Serverless Cloud Functions (Node.js 18)
 │   ├── index.js                        # FCM trigger routing, AI proxy, automated cleanup
 │   └── package.json                    # Cloud Functions dependencies
+├── database/                           # Relational database schemas & SQL migrations
+│   ├── migrations/                     # Supabase PostgreSQL relational schemas
+│   │   ├── supabase_schema.sql         # Primary PostgreSQL database migration script
+│   │   └── supabase_additional_tables.sql # Auxiliary relational tables migration script
+│   └── README.md                       # Migration order and execution guide
 ├── database.rules.json                 # Firebase Realtime Database security rules
 ├── storage.rules                       # Firebase Cloud Storage security rules
 ├── firebase.json                       # Firebase project configuration & routing rules
-├── supabase_schema.sql                 # Primary PostgreSQL database migration script
-├── supabase_additional_tables.sql      # Auxiliary relational tables migration script
 ├── cleanup_rtdb.js                     # Administrative database cleanup maintenance script
 └── README.md                           # Technical documentation
 ```
