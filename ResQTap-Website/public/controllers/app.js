@@ -1379,8 +1379,9 @@ async function syncFromSupabase() {
     const { data: hl } = await supabase.from("highlights").select("*").order("display_order", { ascending: true });
     if (Array.isArray(hl) && hl.length > 0) {
       const hlMap = {};
+      const hlSyncUpdates = {};
       hl.forEach((h) => {
-        hlMap[h.id] = {
+        const item = {
           id: h.id,
           title: h.title,
           imageUrl: h.image_url,
@@ -1388,8 +1389,15 @@ async function syncFromSupabase() {
           order: h.display_order,
           active: h.active !== false
         };
+        hlMap[h.id] = item;
+        if (!state.highlights || !state.highlights[h.id]) {
+          hlSyncUpdates[`highlights/${h.id}`] = item;
+        }
       });
       state.highlights = { ...hlMap, ...state.highlights };
+      if (Object.keys(hlSyncUpdates).length > 0) {
+        update(ref(db), hlSyncUpdates).catch((e) => console.warn("Auto-sync highlights to RTDB:", e));
+      }
     }
 
     // 5. Rooms
@@ -6978,29 +6986,29 @@ async function deleteRoom(roomId) {
 
 async function seedDefaultHighlights() {
   const updates = {
-    "highlights/hl_people_first": {
-      id: "hl_people_first",
-      title: "People First Abilities Always",
+    "highlights/hl_cpr_2026": {
+      id: "hl_cpr_2026",
+      title: "Latihan CPR & Pertolongan Cemas Komuniti 2026",
       imageUrl: "assets/highlight_1.jpg",
-      actionUrl: "https://www.jkm.gov.my",
+      actionUrl: "https://www.moh.gov.my",
       order: 1,
       active: true,
       createdAt: serverTimestamp()
     },
-    "highlights/hl_ability_limits": {
-      id: "hl_ability_limits",
-      title: "Ability Has No Limits - Inclusion Is Everyone's Mission",
+    "highlights/hl_derma_darah": {
+      id: "hl_derma_darah",
+      title: "Kempen Derma Darah Selamatkan Nyawa (PDN)",
       imageUrl: "assets/highlight_2.jpg",
-      actionUrl: "https://www.moh.gov.my",
+      actionUrl: "https://pdn.gov.my",
       order: 2,
       active: true,
       createdAt: serverTimestamp()
     },
-    "highlights/hl_different_abilities": {
-      id: "hl_different_abilities",
-      title: "Different Abilities One Community - Inclusion Today",
+    "highlights/hl_peka_b40": {
+      id: "hl_peka_b40",
+      title: "Skim Saringan Kesihatan Percuma PeKa B40",
       imageUrl: "assets/highlight_3.jpg",
-      actionUrl: "https://www.malaysia.gov.my",
+      actionUrl: "https://pekab40.com.my",
       order: 3,
       active: true,
       createdAt: serverTimestamp()
@@ -7012,9 +7020,9 @@ async function seedDefaultHighlights() {
     // Persist to Supabase
     try {
       await supabase.from("highlights").upsert([
-        { id: "hl_people_first", title: "People First Abilities Always", image_url: "assets/highlight_1.jpg", action_url: "https://www.jkm.gov.my", display_order: 1, active: true },
-        { id: "hl_ability_limits", title: "Ability Has No Limits - Inclusion Is Everyone's Mission", image_url: "assets/highlight_2.jpg", action_url: "https://www.moh.gov.my", display_order: 2, active: true },
-        { id: "hl_different_abilities", title: "Different Abilities One Community - Inclusion Today", image_url: "assets/highlight_3.jpg", action_url: "https://www.malaysia.gov.my", display_order: 3, active: true }
+        { id: "hl_cpr_2026", title: "Latihan CPR & Pertolongan Cemas Komuniti 2026", image_url: "assets/highlight_1.jpg", action_url: "https://www.moh.gov.my", display_order: 1, active: true },
+        { id: "hl_derma_darah", title: "Kempen Derma Darah Selamatkan Nyawa (PDN)", image_url: "assets/highlight_2.jpg", action_url: "https://pdn.gov.my", display_order: 2, active: true },
+        { id: "hl_peka_b40", title: "Skim Saringan Kesihatan Percuma PeKa B40", image_url: "assets/highlight_3.jpg", action_url: "https://pekab40.com.my", display_order: 3, active: true }
       ]);
       syncFromSupabase();
     } catch (sErr) {
@@ -8245,7 +8253,7 @@ function bindEvents() {
       }
 
       try {
-        const targetId = editingId || `hl_${Date.now()}`;
+        const targetId = editingId || push(ref(db, "highlights")).key || `hl_${Date.now()}`;
         if (editingId) {
           await update(ref(db, `highlights/${editingId}`), {
             title,
@@ -8260,9 +8268,8 @@ function bindEvents() {
           if (saveBtn) saveBtn.innerHTML = `${icon("plus")}<span>Add Highlight Banner</span>`;
           showToast("Highlight banner updated successfully!");
         } else {
-          const newRef = push(ref(db, "highlights"));
-          await set(newRef, {
-            id: newRef.key || targetId,
+          await set(ref(db, `highlights/${targetId}`), {
+            id: targetId,
             title,
             imageUrl,
             actionUrl,

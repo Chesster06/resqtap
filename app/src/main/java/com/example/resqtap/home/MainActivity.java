@@ -110,6 +110,8 @@ public class MainActivity extends BaseActivity {
     private android.view.View newsProgress;
     private RecyclerView rvHighlights;
     private HighlightAdapter highlightAdapter;
+    private final java.util.Map<String, HighlightItem> rtdbHighlights = new java.util.LinkedHashMap<>();
+    private final java.util.Map<String, HighlightItem> supabaseHighlights = new java.util.LinkedHashMap<>();
     private FusedLocationProviderClient fusedLocationClient;
     private ActivityResultLauncher<String[]> locationPermLauncher;
     private double lastKnownLat = 0;
@@ -291,6 +293,46 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    private synchronized void refreshHighlightsList() {
+        java.util.Map<String, HighlightItem> merged = new java.util.LinkedHashMap<>();
+
+        // 1. Put Supabase items
+        for (java.util.Map.Entry<String, HighlightItem> entry : supabaseHighlights.entrySet()) {
+            if (entry.getValue() != null && entry.getValue().isActive()) {
+                merged.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // 2. Put RTDB items on top (RTDB takes precedence, and adds new banners)
+        for (java.util.Map.Entry<String, HighlightItem> entry : rtdbHighlights.entrySet()) {
+            if (entry.getValue() != null) {
+                if (entry.getValue().isActive()) {
+                    merged.put(entry.getKey(), entry.getValue());
+                } else {
+                    merged.remove(entry.getKey());
+                }
+            }
+        }
+
+        java.util.List<HighlightItem> list = new java.util.ArrayList<>(merged.values());
+
+        if (list.isEmpty()) {
+            list.add(new HighlightItem("hl_cpr_2026", "Latihan CPR & Pertolongan Cemas Komuniti 2026", R.drawable.img_highlight_1, "https://www.moh.gov.my"));
+            list.add(new HighlightItem("hl_derma_darah", "Kempen Derma Darah Selamatkan Nyawa (PDN)", R.drawable.img_highlight_2, "https://pdn.gov.my"));
+            list.add(new HighlightItem("hl_peka_b40", "Skim Saringan Kesihatan Percuma PeKa B40", R.drawable.img_highlight_3, "https://pekab40.com.my"));
+        } else {
+            java.util.Collections.sort(list, (a, b) -> {
+                int cmp = Integer.compare(a.getOrder(), b.getOrder());
+                if (cmp != 0) return cmp;
+                return Long.compare(b.getCreatedAt(), a.getCreatedAt());
+            });
+        }
+
+        if (highlightAdapter != null) {
+            highlightAdapter.submitList(list);
+        }
+    }
+
     private void setupHighlights() {
         rvHighlights = findViewById(R.id.rv_highlights);
         if (rvHighlights == null) return;
@@ -341,87 +383,61 @@ public class MainActivity extends BaseActivity {
             public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {}
         });
 
-        // Listen to Firebase Realtime Database
+        // 1. Fetch Supabase Highlights
+        com.example.resqtap.supabase.SupabaseManager.getInstance().getHighlights(new com.example.resqtap.supabase.SupabaseManager.Callback<org.json.JSONArray>() {
+            @Override
+            public void onSuccess(org.json.JSONArray sResult) {
+                if (sResult != null && sResult.length() > 0) {
+                    for (int i = 0; i < sResult.length(); i++) {
+                        try {
+                            org.json.JSONObject obj = sResult.getJSONObject(i);
+                            String id = obj.optString("id", "hl_" + i);
+                            String title = obj.optString("title", "");
+                            String imgUrl = obj.optString("image_url", "");
+                            String actUrl = obj.optString("action_url", "");
+                            int ord = obj.optInt("display_order", i + 1);
+                            boolean act = obj.optBoolean("active", true);
+                            supabaseHighlights.put(id, new HighlightItem(id, title, imgUrl, actUrl, act, System.currentTimeMillis(), ord));
+                        } catch (Exception ignored) {}
+                    }
+                }
+                refreshHighlightsList();
+            }
+
+            @Override
+            public void onError(Exception error) {
+                refreshHighlightsList();
+            }
+        });
+
+        // 2. Realtime listener to Firebase Realtime Database
         DatabaseReference hlRef = FirebaseDatabase.getInstance().getReference("highlights");
         hlRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                java.util.List<HighlightItem> list = new java.util.ArrayList<>();
+                rtdbHighlights.clear();
                 if (snapshot.exists() && snapshot.getChildrenCount() > 0) {
                     for (DataSnapshot child : snapshot.getChildren()) {
                         HighlightItem item = child.getValue(HighlightItem.class);
                         if (item != null) {
-                            if (item.getId() == null || item.getId().isEmpty()) item.setId(child.getKey());
-                            if (item.isActive()) {
-                                list.add(item);
+                            String id = item.getId();
+                            if (id == null || id.isEmpty()) {
+                                id = child.getKey();
+                                item.setId(id);
                             }
+                            rtdbHighlights.put(id, item);
                         }
                     }
-                    // Sort by order ascending, then newest createdAt descending
-                    java.util.Collections.sort(list, (a, b) -> {
-                        int cmp = Integer.compare(a.getOrder(), b.getOrder());
-                        if (cmp != 0) return cmp;
-                        return Long.compare(b.getCreatedAt(), a.getCreatedAt());
-                    });
+                } else {
+                    // If RTDB highlights node is empty, seed official default banners
+                    seedHighlightsToFirebase(hlRef);
                 }
-
-                // If empty in RTDB, fetch from Supabase
-                if (list.isEmpty()) {
-                    com.example.resqtap.supabase.SupabaseManager.getInstance().getHighlights(new com.example.resqtap.supabase.SupabaseManager.Callback<org.json.JSONArray>() {
-                        @Override
-                        public void onSuccess(org.json.JSONArray sResult) {
-                            if (sResult != null && sResult.length() > 0) {
-                                java.util.List<HighlightItem> sList = new java.util.ArrayList<>();
-                                for (int i = 0; i < sResult.length(); i++) {
-                                    try {
-                                        org.json.JSONObject obj = sResult.getJSONObject(i);
-                                        String id = obj.optString("id", "hl_" + i);
-                                        String title = obj.optString("title", "");
-                                        String imgUrl = obj.optString("image_url", "");
-                                        String actUrl = obj.optString("action_url", "");
-                                        int ord = obj.optInt("display_order", i + 1);
-                                        sList.add(new HighlightItem(id, title, imgUrl, actUrl, true, System.currentTimeMillis(), ord));
-                                    } catch (Exception ignored) {}
-                                }
-                                if (!sList.isEmpty() && highlightAdapter != null) {
-                                    highlightAdapter.submitList(sList);
-                                    return;
-                                }
-                            }
-                            java.util.List<HighlightItem> defaults = new java.util.ArrayList<>();
-                            defaults.add(new HighlightItem("hl_people_first", "People First Abilities Always", R.drawable.img_highlight_1, "https://www.jkm.gov.my"));
-                            defaults.add(new HighlightItem("hl_ability_limits", "Ability Has No Limits - Inclusion Is Everyone's Mission", R.drawable.img_highlight_2, "https://www.moh.gov.my"));
-                            defaults.add(new HighlightItem("hl_different_abilities", "Different Abilities One Community - Inclusion Today", R.drawable.img_highlight_3, "https://www.malaysia.gov.my"));
-                            if (highlightAdapter != null) highlightAdapter.submitList(defaults);
-                        }
-
-                        @Override
-                        public void onError(Exception error) {
-                            java.util.List<HighlightItem> defaults = new java.util.ArrayList<>();
-                            defaults.add(new HighlightItem("hl_people_first", "People First Abilities Always", R.drawable.img_highlight_1, "https://www.jkm.gov.my"));
-                            defaults.add(new HighlightItem("hl_ability_limits", "Ability Has No Limits - Inclusion Is Everyone's Mission", R.drawable.img_highlight_2, "https://www.moh.gov.my"));
-                            defaults.add(new HighlightItem("hl_different_abilities", "Different Abilities One Community - Inclusion Today", R.drawable.img_highlight_3, "https://www.malaysia.gov.my"));
-                            if (highlightAdapter != null) highlightAdapter.submitList(defaults);
-                        }
-                    });
-                    return;
-                }
-
-                if (highlightAdapter != null) {
-                    highlightAdapter.submitList(list);
-                }
+                refreshHighlightsList();
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
-                // Fallback defaults if offline
-                java.util.List<HighlightItem> list = new java.util.ArrayList<>();
-                list.add(new HighlightItem("hl_people_first", "People First Abilities Always", R.drawable.img_highlight_1, "https://www.jkm.gov.my"));
-                list.add(new HighlightItem("hl_ability_limits", "Ability Has No Limits - Inclusion Is Everyone's Mission", R.drawable.img_highlight_2, "https://www.moh.gov.my"));
-                list.add(new HighlightItem("hl_different_abilities", "Different Abilities One Community - Inclusion Today", R.drawable.img_highlight_3, "https://www.malaysia.gov.my"));
-                if (highlightAdapter != null) {
-                    highlightAdapter.submitList(list);
-                }
+                refreshHighlightsList();
             }
         });
     }
@@ -429,36 +445,36 @@ public class MainActivity extends BaseActivity {
     private void seedHighlightsToFirebase(DatabaseReference hlRef) {
         try {
             java.util.Map<String, Object> map1 = new java.util.HashMap<>();
-            map1.put("id", "hl_people_first");
-            map1.put("title", "People First Abilities Always");
+            map1.put("id", "hl_cpr_2026");
+            map1.put("title", "Latihan CPR & Pertolongan Cemas Komuniti 2026");
             map1.put("imageUrl", "assets/highlight_1.jpg");
-            map1.put("actionUrl", "https://www.jkm.gov.my");
+            map1.put("actionUrl", "https://www.moh.gov.my");
             map1.put("order", 1);
             map1.put("active", true);
             map1.put("createdAt", System.currentTimeMillis());
 
             java.util.Map<String, Object> map2 = new java.util.HashMap<>();
-            map2.put("id", "hl_ability_limits");
-            map2.put("title", "Ability Has No Limits - Inclusion Is Everyone's Mission");
+            map2.put("id", "hl_derma_darah");
+            map2.put("title", "Kempen Derma Darah Selamatkan Nyawa (PDN)");
             map2.put("imageUrl", "assets/highlight_2.jpg");
-            map2.put("actionUrl", "https://www.moh.gov.my");
+            map2.put("actionUrl", "https://pdn.gov.my");
             map2.put("order", 2);
             map2.put("active", true);
             map2.put("createdAt", System.currentTimeMillis());
 
             java.util.Map<String, Object> map3 = new java.util.HashMap<>();
-            map3.put("id", "hl_different_abilities");
-            map3.put("title", "Different Abilities One Community - Inclusion Today");
+            map3.put("id", "hl_peka_b40");
+            map3.put("title", "Skim Saringan Kesihatan Percuma PeKa B40");
             map3.put("imageUrl", "assets/highlight_3.jpg");
-            map3.put("actionUrl", "https://www.malaysia.gov.my");
+            map3.put("actionUrl", "https://pekab40.com.my");
             map3.put("order", 3);
             map3.put("active", true);
             map3.put("createdAt", System.currentTimeMillis());
 
             java.util.Map<String, Object> updates = new java.util.HashMap<>();
-            updates.put("hl_people_first", map1);
-            updates.put("hl_ability_limits", map2);
-            updates.put("hl_different_abilities", map3);
+            updates.put("hl_cpr_2026", map1);
+            updates.put("hl_derma_darah", map2);
+            updates.put("hl_peka_b40", map3);
 
             hlRef.updateChildren(updates);
         } catch (Exception ignored) {
