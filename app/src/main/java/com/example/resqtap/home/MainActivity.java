@@ -110,6 +110,14 @@ public class MainActivity extends BaseActivity {
     private android.view.View newsProgress;
     private RecyclerView rvHighlights;
     private HighlightAdapter highlightAdapter;
+    private final Handler highlightPollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable highlightPollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            loadHighlightsFromSupabase();
+            highlightPollHandler.postDelayed(this, 4000);
+        }
+    };
     private FusedLocationProviderClient fusedLocationClient;
     private ActivityResultLauncher<String[]> locationPermLauncher;
     private double lastKnownLat = 0;
@@ -518,7 +526,8 @@ public class MainActivity extends BaseActivity {
         checkActiveSosCase();
         refreshProfileUi();
         refreshInboxBadge();
-        loadHighlightsFromSupabase();
+        highlightPollHandler.removeCallbacks(highlightPollRunnable);
+        highlightPollHandler.post(highlightPollRunnable);
         try { BatteryOptimizationHelper.promptOnce(this); } catch (Exception ignored) {}
         ensureActiveRoomTracking();
         startSosRingPulse();
@@ -1151,6 +1160,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        highlightPollHandler.removeCallbacks(highlightPollRunnable);
         MaterialButton btnSos = findViewById(R.id.btn_sos);
         if (btnSos != null) stopSosPulse(btnSos);
         stopSosRingPulse();
@@ -1160,6 +1170,7 @@ public class MainActivity extends BaseActivity {
     /** Pembersihan memori, buang listener, dan tutup sambungan. */
     @Override
     protected void onDestroy() {
+        highlightPollHandler.removeCallbacks(highlightPollRunnable);
         stopWatchingSosCaseReservations();
         stopAdminNotificationListener();
         super.onDestroy();
