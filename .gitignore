@@ -33,4 +33,4 @@ verify_*.*
 *.tmp
 Thumbs.db
 desktop.ini
-
+SECRETS_BACKUP.txt
