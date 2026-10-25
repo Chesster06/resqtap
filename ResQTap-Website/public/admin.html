@@ -485,6 +485,10 @@
           <i data-lucide="messages-square" aria-hidden="true"></i>
           <span>Report Livechat</span>
         </button>
+        <button class="nav-button" data-view="ticketlivechat" data-label="Ticket Livechat" type="button">
+          <i data-lucide="ticket" aria-hidden="true"></i>
+          <span>Ticket Livechat</span>
+        </button>
         <button class="nav-button" data-view="rooms" data-label="Channels" type="button">
           <i data-lucide="message-square" aria-hidden="true"></i>
           <span>Channels</span>
@@ -1016,6 +1020,96 @@
         </div>
       </section>
 
+      <section id="ticketlivechatView" class="view-section hidden">
+        <div class="panel livechat-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Ticket Livechat</h3>
+              <p class="muted" style="margin-top:2px; font-size:13px;">Tiket perbualan langsung yang disambungkan terus daripada pengguna AI Assistant</p>
+            </div>
+            <span id="ticketlivechatCount" class="muted"></span>
+          </div>
+          <div class="livechat-layout">
+            <aside class="livechat-thread-pane" aria-label="Ticket livechat conversations">
+              <div id="ticketlivechatThreadList" class="livechat-thread-list"></div>
+            </aside>
+            <section class="livechat-conversation" aria-label="Selected ticket livechat conversation">
+              <div class="livechat-conversation-header">
+                <div>
+                  <h3 id="ticketlivechatSelectedTitle">Select Ticket Conversation</h3>
+                  <span id="ticketlivechatSelectedSubtitle" class="muted">Livechat escalation from AI Assistant appears here.</span>
+                </div>
+                <div class="livechat-header-actions">
+                  <button id="ticketlivechatCallVideoBtn" class="secondary-button slim icon-button" type="button" disabled title="Start video call with user">
+                    <i data-lucide="video" aria-hidden="true"></i>
+                    <span>Video Call</span>
+                  </button>
+                  <button id="ticketlivechatCallVoiceBtn" class="secondary-button slim icon-button" type="button" disabled title="Start voice call with user">
+                    <i data-lucide="phone" aria-hidden="true"></i>
+                    <span>Voice Call</span>
+                  </button>
+                  <button id="ticketlivechatClaimBtn" class="secondary-button slim icon-button" type="button" disabled title="Claim this ticket">
+                    <i data-lucide="shield-check" aria-hidden="true"></i>
+                    <span>Claim Ticket</span>
+                  </button>
+                  <button id="ticketlivechatResolveBtn" class="secondary-button slim icon-button" type="button" disabled title="Resolve and close this ticket">
+                    <i data-lucide="check-circle-2" aria-hidden="true"></i>
+                    <span>Resolve</span>
+                  </button>
+                  <button id="ticketlivechatDeleteBtn" class="secondary-button slim danger icon-button" type="button" disabled title="Delete this ticket session permanently">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                    <span>Delete Ticket</span>
+                  </button>
+                </div>
+              </div>
+              <div id="ticketlivechatMessages" class="livechat-messages">
+                <div id="ticketlivechatEmptyState" class="livechat-empty">
+                  <strong>No ticket selected</strong>
+                  <span>Choose an AI Assistant ticket thread to reply.</span>
+                </div>
+              </div>
+              <form id="ticketlivechatReplyForm" class="livechat-reply-form">
+                <textarea id="ticketlivechatReplyInput" maxlength="1000" placeholder="Type admin reply for this ticket..." disabled></textarea>
+                <div class="livechat-reply-actions">
+                  <div class="livechat-attach-wrap">
+                    <button id="ticketlivechatAttachButton" class="livechat-attach-button" type="button" aria-label="Attach file" aria-expanded="false" disabled>
+                      <i data-lucide="plus" aria-hidden="true"></i>
+                    </button>
+                    <div id="ticketlivechatAttachMenu" class="livechat-attach-menu hidden" role="menu" aria-label="Attachment options">
+                      <button class="attach-document" data-ticketlivechat-attach="document" type="button" role="menuitem">
+                        <i data-lucide="file-text" aria-hidden="true"></i>
+                        <span>Document</span>
+                      </button>
+                      <button class="attach-photo" data-ticketlivechat-attach="photo" type="button" role="menuitem">
+                        <i data-lucide="image" aria-hidden="true"></i>
+                        <span>Photos &amp; videos</span>
+                      </button>
+                      <button class="attach-camera" data-ticketlivechat-attach="camera" type="button" role="menuitem">
+                        <i data-lucide="camera" aria-hidden="true"></i>
+                        <span>Camera</span>
+                      </button>
+                      <button class="attach-audio" data-ticketlivechat-attach="audio" type="button" role="menuitem">
+                        <i data-lucide="headphones" aria-hidden="true"></i>
+                        <span>Audio</span>
+                      </button>
+                      <button class="attach-calendar" data-ticketlivechat-attach="calendar" type="button" role="menuitem">
+                        <i data-lucide="calendar-days" aria-hidden="true"></i>
+                        <span>Calendar</span>
+                      </button>
+                    </div>
+                  </div>
+                  <button id="ticketlivechatReplyButton" class="primary-button slim icon-button" type="submit" disabled>
+                    <i data-lucide="send" aria-hidden="true"></i>
+                    <span>Send</span>
+                  </button>
+                </div>
+                <input id="ticketlivechatAttachmentInput" class="hidden" type="file">
+                <div id="ticketlivechatAttachmentLabel" class="livechat-selected-attachment hidden" aria-live="polite"></div>
+              </form>
+            </section>
+          </div>
+        </div>
+      </section>
 
       <section id="adminsView" class="view-section hidden">
         <div class="panel">

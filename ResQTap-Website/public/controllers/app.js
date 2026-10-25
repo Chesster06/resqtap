@@ -183,6 +183,24 @@ const els = {
   livechatCallVoiceBtn: document.getElementById("livechatCallVoiceBtn"),
   resolveChatButton: document.getElementById("resolveChatButton"),
   deleteChatButton: document.getElementById("deleteChatButton"),
+  ticketlivechatCount: document.getElementById("ticketlivechatCount"),
+  ticketlivechatThreadList: document.getElementById("ticketlivechatThreadList"),
+  ticketlivechatSelectedTitle: document.getElementById("ticketlivechatSelectedTitle"),
+  ticketlivechatSelectedSubtitle: document.getElementById("ticketlivechatSelectedSubtitle"),
+  ticketlivechatMessages: document.getElementById("ticketlivechatMessages"),
+  ticketlivechatEmptyState: document.getElementById("ticketlivechatEmptyState"),
+  ticketlivechatReplyForm: document.getElementById("ticketlivechatReplyForm"),
+  ticketlivechatReplyInput: document.getElementById("ticketlivechatReplyInput"),
+  ticketlivechatAttachButton: document.getElementById("ticketlivechatAttachButton"),
+  ticketlivechatAttachMenu: document.getElementById("ticketlivechatAttachMenu"),
+  ticketlivechatAttachmentInput: document.getElementById("ticketlivechatAttachmentInput"),
+  ticketlivechatAttachmentLabel: document.getElementById("ticketlivechatAttachmentLabel"),
+  ticketlivechatReplyButton: document.getElementById("ticketlivechatReplyButton"),
+  ticketlivechatClaimBtn: document.getElementById("ticketlivechatClaimBtn"),
+  ticketlivechatResolveBtn: document.getElementById("ticketlivechatResolveBtn"),
+  ticketlivechatDeleteBtn: document.getElementById("ticketlivechatDeleteBtn"),
+  ticketlivechatCallVideoBtn: document.getElementById("ticketlivechatCallVideoBtn"),
+  ticketlivechatCallVoiceBtn: document.getElementById("ticketlivechatCallVoiceBtn"),
   aiChatCount: document.getElementById("aiChatCount"),
   aiChatThreadList: document.getElementById("aiChatThreadList"),
   aiChatSelectedTitle: document.getElementById("aiChatSelectedTitle"),
@@ -897,6 +915,7 @@ const state = {
   callLogs: {},
   adminNotifications: {},
   supportChats: {},
+  ticketChats: {},
   sosChats: {},
   aiChats: {},
   highlights: {},
@@ -905,10 +924,14 @@ const state = {
   selectedSosSessionId: "",
   soslivechatSending: false,
   selectedChatUid: "",
+  selectedTicketUid: "",
   selectedAiChatUid: "",
   livechatAttachment: null,
   livechatAttachmentKind: "",
   livechatSending: false,
+  ticketlivechatAttachment: null,
+  ticketlivechatAttachmentKind: "",
+  ticketlivechatSending: false,
   livechatTypingActive: false,
   livechatTypingUid: "",
   livechatTypingLastSentAt: 0,
@@ -1583,6 +1606,9 @@ function startDataListeners() {
   });
   subscribe("supportChats", (value) => {
     state.supportChats = asRecord(value);
+  });
+  subscribe("ticketChats", (value) => {
+    state.ticketChats = asRecord(value);
   });
   subscribe("sosChats", (value) => {
     state.sosChats = asRecord(value);
@@ -2368,6 +2394,13 @@ function chatStatusTone(status) {
 function getSupportThreads() {
   return entries(state.supportChats).filter(([, value]) => {
     const thread = asRecord(value);
+    const meta = asRecord(thread.meta);
+    const chatType = text(meta.chatType).trim().toLowerCase();
+    const source = text(meta.source).trim().toLowerCase();
+    // Exclude AI Assistant ticket escalations from Report Livechat
+    if (chatType === "ticket" || source === "ai_assistant") {
+      return false;
+    }
     const messages = getSupportChatMessages(thread);
     // Hanya senaraikan sesi livechat yang mempunyai sekurang-kurangnya 1 mesej.
     // Jika thread kosong atau hanya mempunyai rekod rating, jangan buka di admin dashboard!
@@ -2402,6 +2435,72 @@ function getSupportThreads() {
       photoUrl: text(user.photoUrl || meta.photoUrl).trim(),
       photoB64: text(user.photoB64 || meta.photoB64).trim(),
       status: text(meta.status).trim() || (messages.length > 0 ? "open" : "resolved"),
+      updatedAt,
+      lastMessage,
+      lastSender,
+      unread: (lastSender === "user" || lastSender === "ai") && text(meta.status).trim() !== "resolved",
+      messageCount: messages.length
+    };
+  }).sort((a, b) => b.updatedAt - a.updatedAt || a.name.localeCompare(b.name));
+}
+
+function getTicketThreads() {
+  const records = new Map();
+
+  // 1. Threads under ticketChats
+  entries(state.ticketChats).forEach(([uid, value]) => {
+    const thread = asRecord(value);
+    const messages = getSupportChatMessages(thread);
+    if (messages.length > 0 || Object.keys(asRecord(thread.meta)).length > 0) {
+      records.set(uid, { uid, thread, store: "ticketChats" });
+    }
+  });
+
+  // 2. Legacy / fallback threads under supportChats flagged as ticket or from ai_assistant
+  entries(state.supportChats).forEach(([uid, value]) => {
+    const thread = asRecord(value);
+    const meta = asRecord(thread.meta);
+    const chatType = text(meta.chatType).trim().toLowerCase();
+    const source = text(meta.source).trim().toLowerCase();
+    if (chatType === "ticket" || source === "ai_assistant" || (!meta.isReportChat && !meta.reportId && !records.has(uid))) {
+      const messages = getSupportChatMessages(thread);
+      if (messages.length > 0 && !records.has(uid)) {
+        records.set(uid, { uid, thread, store: "supportChats" });
+      }
+    }
+  });
+
+  return Array.from(records.values()).map(({ uid, thread, store }) => {
+    const meta = asRecord(thread.meta);
+    const user = asRecord(state.users?.[uid]);
+    const messages = getSupportChatMessages(thread);
+    const last = messages[messages.length - 1] || {};
+    const name = text(meta.userName || user.name || user.email || meta.userEmail || uid).trim() || uid;
+    const email = text(meta.userEmail || user.email).trim();
+    const updatedAt = Math.max(millis(meta.updatedAt), millis(last.createdAt));
+    const lastSender = text(meta.lastSender || last.sender).trim();
+    const lastAttachment = asRecord(last.attachment);
+    const topic = text(meta.topic || "AI Assistant Ticket").trim();
+    const ticketId = text(meta.ticketId || meta.sessionId || ("TICK-" + uid.substring(0, 6).toUpperCase())).trim();
+    const lastMessage = text(meta.lastMessage || last.text).trim()
+      || (lastAttachment.downloadUrl ? `Attachment: ${text(lastAttachment.name || "file")}` : "");
+
+    return {
+      uid,
+      store,
+      meta,
+      messages,
+      name,
+      email,
+      topic,
+      ticketId,
+      publicId: text(meta.publicId || user.publicId).trim(),
+      photoUrl: text(user.photoUrl || meta.photoUrl).trim(),
+      photoB64: text(user.photoB64 || meta.photoB64).trim(),
+      status: text(meta.status).trim() || (messages.length > 0 ? "open" : "resolved"),
+      claimedBy: text(meta.claimedBy).trim(),
+      claimedByName: text(meta.claimedByName).trim(),
+      claimedAt: millis(meta.claimedAt),
       updatedAt,
       lastMessage,
       lastSender,
@@ -3417,6 +3516,7 @@ function render() {
   renderNotices();
   renderSosLivechat();
   renderLivechat();
+  renderTicketLivechat();
   if (els.aiChatCount) renderAiChat();
   renderAdmins();
   renderHighlights();
@@ -3453,7 +3553,8 @@ function renderNav() {
     soslivechat: "SOS Livechat",
     reports: "Reports",
     notices: "Notifications",
-    livechat: "Ticket",
+    livechat: "Report Livechat",
+    ticketlivechat: "Ticket Livechat",
     highlights: "Highlights (Mobile Carousel)",
     logs: "Logs",
     admins: "Admins",
@@ -4568,6 +4669,436 @@ function renderLivechat() {
     </div>
   `;
   els.livechatMessages.scrollTop = els.livechatMessages.scrollHeight;
+}
+
+function ticketChatStatusLabel(status, claimedByName) {
+  const normalized = text(status).trim().toLowerCase();
+  if (normalized === "resolved" || normalized === "closed") return "Resolved";
+  if (claimedByName) return `Claimed: ${claimedByName}`;
+  if (normalized === "in_progress") return "In Progress";
+  if (normalized === "answered") return "Answered";
+  return "Open";
+}
+
+function ticketChatStatusTone(status) {
+  const normalized = text(status).trim().toLowerCase();
+  if (normalized === "resolved" || normalized === "closed") return "";
+  if (normalized === "answered") return "good";
+  if (normalized === "in_progress") return "blue";
+  return "warn";
+}
+
+function renderTicketLivechat() {
+  if (!els.ticketlivechatCount || !els.ticketlivechatThreadList) return;
+
+  const searchedThreads = getTicketThreads().filter((thread) => matchesSearch([
+    thread.uid,
+    thread.name,
+    thread.email,
+    thread.publicId,
+    thread.topic,
+    thread.ticketId,
+    thread.status,
+    thread.lastMessage
+  ]));
+  const allThreads = getTicketThreads();
+  const selectedExists = state.selectedTicketUid
+    && (allThreads.some((thread) => thread.uid === state.selectedTicketUid) || Boolean(state.ticketChats?.[state.selectedTicketUid]) || Boolean(state.users?.[state.selectedTicketUid]));
+
+  if (!selectedExists) {
+    state.selectedTicketUid = "";
+  }
+
+  els.ticketlivechatCount.textContent = `${searchedThreads.length} shown`;
+  els.ticketlivechatThreadList.innerHTML = searchedThreads.length ? searchedThreads.map((thread) => {
+    const active = thread.uid === state.selectedTicketUid;
+    const avatar = avatarHtml({
+      name: thread.name,
+      email: thread.email,
+      photoUrl: thread.photoUrl,
+      photoB64: thread.photoB64
+    }, thread.uid);
+    return `
+      <button class="livechat-thread${active ? " is-active" : ""}" data-action="select-ticket" data-ticket-uid="${escapeHtml(thread.uid)}" type="button">
+        ${avatar}
+        <span class="livechat-thread-main">
+          <span class="livechat-thread-head">
+            <strong>${escapeHtml(thread.name)}</strong>
+            ${pill(ticketChatStatusLabel(thread.status, thread.claimedByName), ticketChatStatusTone(thread.status))}
+            <span class="pill good" style="font-size:10px; padding:2px 6px;">AI TICKET</span>
+          </span>
+          ${thread.topic ? `<span class="cell-meta">${escapeHtml(thread.topic)}</span>` : ""}
+          <span>${escapeHtml(thread.lastMessage || "No messages yet")}</span>
+          <span class="cell-meta">${escapeHtml(thread.email || thread.uid)} - ${escapeHtml(ageLabel(thread.updatedAt))}</span>
+        </span>
+        <span style="display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; gap:4px; align-self:stretch;">
+          ${thread.unread ? `<span class="livechat-unread" aria-label="Unread user reply"></span>` : `<span></span>`}
+          <span class="small-icon-delete" data-action="delete-ticket-quick" data-uid="${escapeHtml(thread.uid)}" title="Padam tiket ini" role="button" tabindex="0">
+            ${icon("trash-2")}
+          </span>
+        </span>
+      </button>
+    `;
+  }).join("") : `<div class="livechat-empty inline"><strong>No ticket threads</strong><span>AI Assistant escalation tickets will appear here when users talk to an agent.</span></div>`;
+
+  let selectedThread = allThreads.find((thread) => thread.uid === state.selectedTicketUid);
+  if (!selectedThread && state.selectedTicketUid) {
+    const userRec = asRecord(state.users?.[state.selectedTicketUid]);
+    const rawChat = asRecord(state.ticketChats?.[state.selectedTicketUid] || state.supportChats?.[state.selectedTicketUid]);
+    const chatMeta = asRecord(rawChat.meta);
+    const messages = getSupportChatMessages(rawChat);
+    selectedThread = {
+      uid: state.selectedTicketUid,
+      store: state.ticketChats?.[state.selectedTicketUid] ? "ticketChats" : "supportChats",
+      meta: chatMeta,
+      messages,
+      name: text(chatMeta.userName || userRec.name || userRec.email || state.selectedTicketUid),
+      email: text(chatMeta.userEmail || userRec.email),
+      status: text(chatMeta.status) || "open",
+      claimedBy: text(chatMeta.claimedBy).trim(),
+      claimedByName: text(chatMeta.claimedByName).trim(),
+      claimedAt: millis(chatMeta.claimedAt),
+      updatedAt: Date.now()
+    };
+  }
+
+  if (!selectedThread) {
+    els.ticketlivechatSelectedTitle.textContent = "Select a ticket";
+    els.ticketlivechatSelectedSubtitle.textContent = "AI Assistant escalation tickets appear here.";
+    els.ticketlivechatMessages.innerHTML = `
+      <div class="livechat-empty">
+        <strong>No ticket selected</strong>
+        <span>Choose an AI Assistant ticket thread to reply.</span>
+      </div>
+    `;
+    if (state.ticketlivechatAttachment) clearTicketAttachment();
+    updateTicketComposer();
+    if (els.ticketlivechatClaimBtn) els.ticketlivechatClaimBtn.disabled = true;
+    if (els.ticketlivechatResolveBtn) els.ticketlivechatResolveBtn.disabled = true;
+    if (els.ticketlivechatDeleteBtn) els.ticketlivechatDeleteBtn.disabled = true;
+    if (els.ticketlivechatCallVideoBtn) {
+      els.ticketlivechatCallVideoBtn.disabled = true;
+      els.ticketlivechatCallVideoBtn.onclick = null;
+    }
+    if (els.ticketlivechatCallVoiceBtn) {
+      els.ticketlivechatCallVoiceBtn.disabled = true;
+      els.ticketlivechatCallVoiceBtn.onclick = null;
+    }
+    return;
+  }
+
+  els.ticketlivechatSelectedTitle.textContent = selectedThread.name;
+  els.ticketlivechatSelectedSubtitle.textContent = [
+    selectedThread.ticketId ? `Ticket: ${selectedThread.ticketId}` : "",
+    selectedThread.topic ? `Topic: ${selectedThread.topic}` : "",
+    selectedThread.email || selectedThread.uid,
+    `${selectedThread.messages.length} messages`,
+    ticketChatStatusLabel(selectedThread.status, selectedThread.claimedByName)
+  ].filter(Boolean).join(" - ");
+
+  const isResolved = text(selectedThread.status).toLowerCase() === "resolved";
+  const isClaimedByMe = selectedThread.claimedBy && selectedThread.claimedBy === (state.currentUser ? state.currentUser.uid : "");
+
+  if (els.ticketlivechatClaimBtn) {
+    els.ticketlivechatClaimBtn.disabled = isResolved || Boolean(isClaimedByMe);
+    els.ticketlivechatClaimBtn.innerHTML = `${icon("shield-check")}<span>${isClaimedByMe ? "Claimed by You" : (selectedThread.claimedByName ? `Claimed (${selectedThread.claimedByName})` : "Claim Ticket")}</span>`;
+    els.ticketlivechatClaimBtn.onclick = () => claimTicketThread(selectedThread.uid, selectedThread.store);
+  }
+
+  if (els.ticketlivechatResolveBtn) {
+    els.ticketlivechatResolveBtn.disabled = isResolved;
+    els.ticketlivechatResolveBtn.onclick = () => resolveSelectedTicket(selectedThread.uid, selectedThread.store);
+  }
+
+  if (els.ticketlivechatDeleteBtn) {
+    els.ticketlivechatDeleteBtn.disabled = false;
+    els.ticketlivechatDeleteBtn.onclick = () => deleteSelectedTicket(selectedThread.uid, selectedThread.store);
+  }
+
+  if (els.ticketlivechatCallVideoBtn) {
+    els.ticketlivechatCallVideoBtn.disabled = false;
+    els.ticketlivechatCallVideoBtn.onclick = () => startAdminCall(selectedThread.uid, selectedThread.name, "video");
+  }
+
+  if (els.ticketlivechatCallVoiceBtn) {
+    els.ticketlivechatCallVoiceBtn.disabled = false;
+    els.ticketlivechatCallVoiceBtn.onclick = () => startAdminCall(selectedThread.uid, selectedThread.name, "voice");
+  }
+
+  updateTicketComposer();
+
+  els.ticketlivechatMessages.innerHTML = selectedThread.messages.length ? selectedThread.messages.map((message) => {
+    const fromAdmin = message.sender === "admin";
+    const fromSystem = message.sender === "system";
+    const fromAi = message.sender === "ai" || message.sender === "assistant";
+    let sender = message.senderName || selectedThread.name;
+    let badgeHtml = "";
+
+    if (fromAdmin) {
+      sender = (message.source === "admin-panel" || !message.senderName || message.senderName === "Admin") ? LIVECHAT_ADMIN_LABEL : message.senderName;
+    } else if (fromSystem) {
+      sender = "ResQTap Ticket System";
+      badgeHtml = ` <span class="badge-system-pill">System</span>`;
+    } else if (fromAi) {
+      sender = "ResQTap AI Assistant";
+      badgeHtml = ` <span class="badge-ai-pill">AI</span>`;
+    }
+
+    const attachment = asRecord(message.attachment);
+    const rawAttachUrl = text(attachment.downloadUrl).trim();
+    const isSafeAttach = rawAttachUrl.startsWith("https://") || rawAttachUrl.startsWith("http://") || rawAttachUrl.startsWith("data:image/") || rawAttachUrl.startsWith("/");
+    const safeAttachUrl = isSafeAttach ? rawAttachUrl : "#";
+    const attachmentHtml = rawAttachUrl ? `
+      ${rawAttachUrl.startsWith("data:image/")
+        ? `<img class="livechat-image-preview" src="${escapeHtml(safeAttachUrl)}" alt="${escapeHtml(attachment.name || "Attachment")}">`
+        : `<a class="livechat-attachment" href="${escapeHtml(safeAttachUrl)}" target="_blank" rel="noopener noreferrer">
+            ${icon("paperclip")}
+            <span>${escapeHtml(attachment.name || "Attachment")}</span>
+          </a>`}
+    ` : "";
+
+    const msgClass = fromAdmin ? "from-admin" : (fromSystem ? "from-system" : (fromAi ? "from-ai" : "from-user"));
+    const canDeleteMsg = Boolean(message.id);
+    const deleteBtnHtml = canDeleteMsg ? `
+      <span class="msg-delete-btn" data-action="delete-ticket-msg" data-msg-id="${escapeHtml(message.id)}" data-store="${escapeHtml(selectedThread.store || "ticketChats")}" title="Padam mesej" role="button" tabindex="0">
+        ${icon("trash-2")}
+      </span>
+    ` : "";
+
+    return `
+      <div class="livechat-message ${msgClass}">
+        <div class="livechat-bubble">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <span class="livechat-sender">${escapeHtml(sender)}${badgeHtml}</span>
+            ${deleteBtnHtml}
+          </div>
+          ${message.text ? `<p>${escapeHtml(message.text)}</p>` : ""}
+          ${attachmentHtml}
+          <time>${escapeHtml(message.createdAt ? formatDate(message.createdAt) : "-")}</time>
+        </div>
+      </div>
+    `;
+  }).join("") : `
+    <div class="livechat-empty">
+      <strong>No messages yet</strong>
+      <span>This ticket is open but still empty.</span>
+    </div>
+  `;
+  els.ticketlivechatMessages.scrollTop = els.ticketlivechatMessages.scrollHeight;
+}
+
+function updateTicketComposer() {
+  const hasThread = Boolean(state.selectedTicketUid);
+  const thread = getTicketThreads().find((t) => t.uid === state.selectedTicketUid);
+  const isResolved = thread && text(thread.status).toLowerCase() === "resolved";
+  const disabled = !hasThread || isResolved || state.ticketlivechatSending;
+
+  if (els.ticketlivechatReplyInput) els.ticketlivechatReplyInput.disabled = disabled;
+  if (els.ticketlivechatAttachButton) els.ticketlivechatAttachButton.disabled = disabled;
+  if (els.ticketlivechatReplyButton) {
+    const hasText = Boolean(els.ticketlivechatReplyInput && els.ticketlivechatReplyInput.value.trim());
+    const hasAttach = Boolean(state.ticketlivechatAttachment);
+    els.ticketlivechatReplyButton.disabled = disabled || (!hasText && !hasAttach);
+  }
+}
+
+async function sendTicketReply() {
+  const uid = state.selectedTicketUid;
+  if (!validPathSegment(uid)) return;
+  const message = els.ticketlivechatReplyInput ? els.ticketlivechatReplyInput.value.trim() : "";
+  const attachment = state.ticketlivechatAttachment;
+  if (!message && !attachment) return;
+
+  state.ticketlivechatSending = true;
+  updateTicketComposer();
+
+  try {
+    const thread = getTicketThreads().find((t) => t.uid === uid);
+    const store = (thread && thread.store) || "ticketChats";
+    const messageRef = push(ref(db, `${store}/${uid}/messages`));
+    const messageId = messageRef.key;
+    if (!messageId) throw new Error("Unable to create message id.");
+
+    const adminName = currentAdminName();
+    let attachmentPayload = null;
+    if (attachment) {
+      attachmentPayload = {
+        name: attachment.name || "attachment",
+        mimeType: attachment.mimeType || "application/octet-stream",
+        downloadUrl: attachment.dataUrl,
+        storageType: "inline_base64"
+      };
+    }
+
+    const chatMessage = {
+      text: message,
+      sender: "admin",
+      senderUid: state.currentUser ? state.currentUser.uid : "admin",
+      senderName: adminName,
+      createdAt: serverTimestamp(),
+      source: "admin-panel"
+    };
+    if (attachmentPayload) chatMessage.attachment = attachmentPayload;
+
+    const lastMessage = message || `Attachment: ${attachmentPayload.name || "file"}`;
+    const updates = {
+      [`${store}/${uid}/messages/${messageId}`]: chatMessage,
+      [`${store}/${uid}/meta/status`]: "answered",
+      [`${store}/${uid}/meta/lastMessage`]: lastMessage,
+      [`${store}/${uid}/meta/lastSender`]: "admin",
+      [`${store}/${uid}/meta/lastAdminUid`]: state.currentUser ? state.currentUser.uid : "",
+      [`${store}/${uid}/meta/lastAdminName`]: adminName,
+      [`${store}/${uid}/meta/updatedAt`]: serverTimestamp()
+    };
+    if (store !== "ticketChats") {
+      updates[`ticketChats/${uid}/messages/${messageId}`] = chatMessage;
+      updates[`ticketChats/${uid}/meta/status`] = "answered";
+      updates[`ticketChats/${uid}/meta/lastMessage`] = lastMessage;
+      updates[`ticketChats/${uid}/meta/lastSender`] = "admin";
+      updates[`ticketChats/${uid}/meta/updatedAt`] = serverTimestamp();
+    }
+
+    await update(ref(db), updates);
+    if (els.ticketlivechatReplyInput) els.ticketlivechatReplyInput.value = "";
+    clearTicketAttachment();
+    updateTicketComposer();
+    showToast("Ticket reply sent.");
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || "Unable to send ticket reply.");
+  } finally {
+    state.ticketlivechatSending = false;
+    updateTicketComposer();
+  }
+}
+
+async function claimTicketThread(uid, store = "ticketChats") {
+  if (!validPathSegment(uid)) return;
+  const adminName = currentAdminName();
+  const updates = {
+    [`${store}/${uid}/meta/claimedAt`]: serverTimestamp(),
+    [`${store}/${uid}/meta/claimedBy`]: state.currentUser ? state.currentUser.uid : "",
+    [`${store}/${uid}/meta/claimedByName`]: adminName,
+    [`${store}/${uid}/meta/claimNotice`]: LIVECHAT_CLAIM_NOTICE,
+    [`${store}/${uid}/meta/status`]: "in_progress",
+    [`${store}/${uid}/meta/updatedAt`]: serverTimestamp()
+  };
+  const msgRef = push(ref(db, `${store}/${uid}/messages`));
+  if (msgRef.key) {
+    updates[`${store}/${uid}/messages/${msgRef.key}`] = {
+      text: LIVECHAT_CLAIM_NOTICE,
+      sender: "system",
+      senderUid: "system",
+      senderName: "System",
+      createdAt: serverTimestamp()
+    };
+  }
+  await update(ref(db), updates);
+  showToast("Ticket claimed.");
+}
+
+async function resolveSelectedTicket(uid = state.selectedTicketUid, store = "ticketChats") {
+  if (!validPathSegment(uid)) return;
+  const adminName = currentAdminName();
+  const updates = {
+    [`${store}/${uid}/meta/status`]: "resolved",
+    [`${store}/${uid}/meta/resolvedAt`]: serverTimestamp(),
+    [`${store}/${uid}/meta/resolvedBy`]: state.currentUser ? state.currentUser.uid : "",
+    [`${store}/${uid}/meta/resolvedByName`]: adminName,
+    [`${store}/${uid}/meta/updatedAt`]: serverTimestamp()
+  };
+  const msgRef = push(ref(db, `${store}/${uid}/messages`));
+  if (msgRef.key) {
+    updates[`${store}/${uid}/messages/${msgRef.key}`] = {
+      text: "The live support session has been marked resolved and closed by Admin.",
+      sender: "system",
+      senderUid: "system",
+      senderName: "System",
+      createdAt: serverTimestamp()
+    };
+  }
+  await update(ref(db), updates);
+  showToast("Ticket marked resolved.");
+}
+
+async function deleteSelectedTicket(uid = state.selectedTicketUid, store = "ticketChats") {
+  if (!validPathSegment(uid)) return;
+  const thread = getTicketThreads().find((t) => t.uid === uid);
+  const displayName = thread ? thread.name : "this user";
+  if (!window.confirm(`Padam tiket livechat untuk "${displayName}"? Seluruh rekod perbualan ini akan dipadamkan.`)) return;
+  try {
+    await remove(ref(db, `${store}/${uid}`));
+    if (store !== "ticketChats") {
+      await remove(ref(db, `ticketChats/${uid}`));
+    }
+    state.selectedTicketUid = "";
+    showToast("Tiket perbualan telah dipadam.");
+    renderTicketLivechat();
+  } catch (err) {
+    console.error("Gagal memadam tiket:", err);
+    showToast("Gagal memadam tiket: " + (err.message || err));
+  }
+}
+
+async function deleteSingleTicketMessage(msgId, store = "ticketChats") {
+  const uid = state.selectedTicketUid;
+  if (!validPathSegment(uid) || !msgId) return;
+  if (!window.confirm("Padam mesej ini?")) return;
+  try {
+    await remove(ref(db, `${store}/${uid}/messages/${msgId}`));
+    showToast("Mesej tiket dipadam.");
+  } catch (err) {
+    console.error("Gagal memadam mesej tiket:", err);
+    showToast("Gagal memadam mesej tiket.");
+  }
+}
+
+function clearTicketAttachment() {
+  state.ticketlivechatAttachment = null;
+  state.ticketlivechatAttachmentKind = "";
+  if (els.ticketlivechatAttachmentInput) els.ticketlivechatAttachmentInput.value = "";
+  if (els.ticketlivechatAttachmentLabel) {
+    els.ticketlivechatAttachmentLabel.textContent = "";
+    els.ticketlivechatAttachmentLabel.classList.add("hidden");
+  }
+  updateTicketComposer();
+}
+
+function chooseTicketAttachment(kind) {
+  const option = LIVECHAT_ATTACHMENT_OPTIONS[kind];
+  if (!option || !els.ticketlivechatAttachmentInput) return;
+  state.ticketlivechatAttachmentKind = kind;
+  els.ticketlivechatAttachmentInput.value = "";
+  els.ticketlivechatAttachmentInput.accept = option.accept || "";
+  if (option.capture) {
+    els.ticketlivechatAttachmentInput.setAttribute("capture", option.capture);
+  } else {
+    els.ticketlivechatAttachmentInput.removeAttribute("capture");
+  }
+  els.ticketlivechatAttachmentInput.click();
+}
+
+function handleTicketAttachmentSelected() {
+  const file = els.ticketlivechatAttachmentInput && els.ticketlivechatAttachmentInput.files && els.ticketlivechatAttachmentInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.ticketlivechatAttachment = {
+      name: file.name,
+      mimeType: file.type || "application/octet-stream",
+      size: file.size,
+      dataUrl: String(reader.result || "")
+    };
+    if (els.ticketlivechatAttachmentLabel) {
+      els.ticketlivechatAttachmentLabel.innerHTML = `
+        <span>${escapeHtml(file.name)}</span>
+        <button type="button" data-ticketlivechat-clear-attachment aria-label="Remove attachment">&times;</button>
+      `;
+      els.ticketlivechatAttachmentLabel.classList.remove("hidden");
+    }
+    updateTicketComposer();
+  };
+  reader.readAsDataURL(file);
 }
 
 function aiChatStatusLabel(status) {
@@ -7227,6 +7758,29 @@ function handleAction(button) {
       deleteSingleLivechatMessage(button.dataset.msgId);
       return;
     }
+    if (action === "select-ticket") {
+      const ticketUid = button.dataset.ticketUid || "";
+      if (state.selectedTicketUid !== ticketUid) clearTicketAttachment();
+      state.selectedTicketUid = ticketUid;
+      state.activeView = "ticketlivechat";
+      renderTicketLivechat();
+      renderNav();
+      return;
+    }
+    if (action === "delete-ticket-quick") {
+      if (event) event.stopPropagation();
+      const targetUid = button.dataset.uid;
+      if (targetUid) {
+        state.selectedTicketUid = targetUid;
+        deleteSelectedTicket();
+      }
+      return;
+    }
+    if (action === "delete-ticket-msg") {
+      if (event) event.stopPropagation();
+      deleteSingleTicketMessage(button.dataset.msgId, button.dataset.store);
+      return;
+    }
     if (action === "clear-detail") state.selected = null;
     if (action === "manage-sos-case") {
       sosAlarmSound.mute(alert);
@@ -7633,6 +8187,40 @@ function bindEvents() {
       showToast(error.message || "Unable to delete livechat.");
     });
   });
+
+  if (els.ticketlivechatReplyInput) {
+    els.ticketlivechatReplyInput.addEventListener("input", updateTicketComposer);
+  }
+  if (els.ticketlivechatReplyForm) {
+    els.ticketlivechatReplyForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      sendTicketReply();
+    });
+  }
+  if (els.ticketlivechatAttachButton && els.ticketlivechatAttachMenu) {
+    els.ticketlivechatAttachButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      els.ticketlivechatAttachMenu.classList.toggle("hidden");
+    });
+  }
+  if (els.ticketlivechatAttachMenu) {
+    els.ticketlivechatAttachMenu.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const option = event.target.closest("[data-ticketlivechat-attach]");
+      if (!option) return;
+      chooseTicketAttachment(option.dataset.ticketlivechatAttach || "");
+      els.ticketlivechatAttachMenu.classList.add("hidden");
+    });
+  }
+  if (els.ticketlivechatAttachmentInput) {
+    els.ticketlivechatAttachmentInput.addEventListener("change", handleTicketAttachmentSelected);
+  }
+  if (els.ticketlivechatAttachmentLabel) {
+    els.ticketlivechatAttachmentLabel.addEventListener("click", (event) => {
+      const clear = event.target.closest("[data-ticketlivechat-clear-attachment]");
+      if (clear) clearTicketAttachment();
+    });
+  }
   if (els.deleteAiChatButton) {
     els.deleteAiChatButton.addEventListener("click", () => {
       deleteSelectedAiChat().catch((error) => {

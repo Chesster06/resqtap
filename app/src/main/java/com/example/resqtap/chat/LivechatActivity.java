@@ -299,11 +299,12 @@ public class LivechatActivity extends BaseActivity {
         metaUpdates.put("publicId", safe(UserPrefs.getPublicId(this)));
         metaUpdates.put("source", "app");
         metaUpdates.put("status", "open");
+        metaUpdates.put("chatType", "report");
+        metaUpdates.put("isReportChat", true);
         metaUpdates.put("topic", currentTopic);
         metaUpdates.put("updatedAt", ServerValue.TIMESTAMP);
         if (reportId != null && !reportId.isEmpty()) {
             metaUpdates.put("reportId", reportId);
-            metaUpdates.put("isReportChat", true);
         }
         chatRef.child("meta").updateChildren(metaUpdates);
 
@@ -600,6 +601,8 @@ public class LivechatActivity extends BaseActivity {
         updates.put("meta/publicId", safe(UserPrefs.getPublicId(this)));
         updates.put("meta/source", "app");
         updates.put("meta/status", "open");
+        updates.put("meta/chatType", "report");
+        updates.put("meta/isReportChat", true);
         updates.put("meta/topic", currentTopic);
         updates.put("meta/lastMessage", lastMsg);
         updates.put("meta/lastSender", "user");

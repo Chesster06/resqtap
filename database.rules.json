@@ -117,6 +117,20 @@
         }
       }
     },
+    "ticketChats": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
+        ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
+        "messages": {
+          ".indexOn": [
+            "createdAt"
+          ],
+          "$messageId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['text','sender','senderUid','senderName','createdAt']) && newData.child('text').isString() && newData.child('text').val().length <= 2500 && newData.child('sender').isString() && newData.child('senderUid').isString() && ((newData.child('sender').val() === 'user' && newData.child('senderUid').val() === auth.uid) || (newData.child('sender').val() === 'admin' && (root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)) || (newData.child('sender').val() === 'system' && (newData.child('senderUid').val() === auth.uid || newData.child('senderUid').val() === 'system')) || ((newData.child('sender').val() === 'ai' || newData.child('sender').val() === 'assistant') && (newData.child('senderUid').val() === auth.uid || newData.child('senderUid').val() === 'ai_assistant'))))"
+          }
+        }
+      }
+    },
     "sosChats": {
       "$chatId": {
         ".read": "auth != null && ($chatId === auth.uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true || data.child('meta').child('userUid').val() === auth.uid)",

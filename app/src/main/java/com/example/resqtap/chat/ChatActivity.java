@@ -431,13 +431,13 @@ public class ChatActivity extends BaseActivity {
                                     .putLong(PREF_LIVECHAT_START_TIME, 0L)
                                     .apply();
                             updateUiForLiveChat(false);
-                            sendPresetPrompt("Hubungi Sokongan Admin");
+                            sendPresetPrompt("Talk to Agent");
                         }
                     }
 
                     @Override
                     public void onCancelled(DatabaseError error) {
-                        sendPresetPrompt("Hubungi Sokongan Admin");
+                        sendPresetPrompt("Talk to Agent");
                     }
                 });
                 return;
@@ -445,7 +445,7 @@ public class ChatActivity extends BaseActivity {
             Toast.makeText(this, R.string.livechat_active_cannot_reset, Toast.LENGTH_SHORT).show();
             return;
         }
-        sendPresetPrompt("Hubungi Sokongan Admin");
+        sendPresetPrompt("Talk to Agent");
     }
 
     /** Hantar soalan cadangan terus ke chat. */
@@ -576,7 +576,7 @@ public class ChatActivity extends BaseActivity {
         if (user == null) return;
         currentUid = user.getUid();
         liveChatRef = FirebaseDatabase.getInstance(FirebaseRoomClient.DATABASE_URL)
-                .getReference("supportChats")
+                .getReference("ticketChats")
                 .child(currentUid);
     }
 
@@ -588,7 +588,7 @@ public class ChatActivity extends BaseActivity {
         currentUid = user.getUid();
 
         liveChatRef = FirebaseDatabase.getInstance(FirebaseRoomClient.DATABASE_URL)
-                .getReference("supportChats")
+                .getReference("ticketChats")
                 .child(currentUid);
 
         liveMetaListener = new ValueEventListener() {
@@ -878,6 +878,8 @@ public class ChatActivity extends BaseActivity {
         updates.put("meta/userUid", uid);
         updates.put("meta/userName", name);
         updates.put("meta/userEmail", safe(UserPrefs.getEmail(this)));
+        updates.put("meta/source", "ai_assistant");
+        updates.put("meta/chatType", "ticket");
         updates.put("meta/unreadByUser", false);
         updates.put("messages/" + messageId, msg);
 
@@ -1465,7 +1467,11 @@ public class ChatActivity extends BaseActivity {
 
         // Check if user is asking for admin or live support
         String lower = message.toLowerCase(Locale.ROOT);
-        boolean asksSupport = lower.contains("livechat") || lower.contains("live chat") || lower.contains("admin") || lower.contains("sokongan") || lower.contains("human") || lower.contains("operator") || lower.contains("pegawai") || lower.contains("agent") || lower.contains("support");
+        boolean asksSupport = lower.contains("livechat") || lower.contains("live chat")
+                || lower.contains("admin") || lower.contains("sokongan") || lower.contains("human")
+                || lower.contains("operator") || lower.contains("pegawai") || lower.contains("agent")
+                || lower.contains("support") || lower.contains("ticket") || lower.contains("tiket")
+                || lower.contains("manusia") || lower.contains("bantuan");
 
         if (asksSupport) {
             isLiveChatMode = true;
@@ -1487,7 +1493,8 @@ public class ChatActivity extends BaseActivity {
                 Map<String, Object> metaOpen = new HashMap<>();
                 metaOpen.put("status", "open");
                 metaOpen.put("sessionStartTime", sessionStart);
-                metaOpen.put("sessionId", "session_" + sessionStart);
+                metaOpen.put("sessionId", "ticket_" + sessionStart);
+                metaOpen.put("ticketId", "TICK-" + (sessionStart % 1000000));
                 metaOpen.put("createdAt", ServerValue.TIMESTAMP);
                 metaOpen.put("resolvedAt", 0);
                 metaOpen.put("resolvedBy", null);
@@ -1503,6 +1510,10 @@ public class ChatActivity extends BaseActivity {
                 metaOpen.put("userName", name);
                 metaOpen.put("userEmail", safe(UserPrefs.getEmail(this)));
                 metaOpen.put("unreadByUser", false);
+                metaOpen.put("source", "ai_assistant");
+                metaOpen.put("chatType", "ticket");
+                metaOpen.put("isReportChat", false);
+                metaOpen.put("topic", "AI Assistant Ticket - " + (userMsgText.isEmpty() ? "Live Support" : userMsgText));
                 liveChatRef.child("meta").updateChildren(metaOpen);
             }
 
