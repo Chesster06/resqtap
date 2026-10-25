@@ -615,6 +615,11 @@ public class SosProgressActivity extends BaseActivity {
         CallSignalingClient.setAwaitingSosResponse(false);
         DatabaseReference rtdb = FirebaseDatabase.getInstance(FirebaseRoomClient.DATABASE_URL).getReference();
         rtdb.child("adminCalls").child("incoming").child("status").setValue("cancelled");
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                rtdb.child("adminCalls").child("incoming").removeValue();
+            } catch (Exception ignored) {}
+        }, 2000);
         if (!roomCode.isEmpty() && !alertId.isEmpty()) {
             rtdb.child("rooms").child(roomCode.toUpperCase(Locale.ROOT)).child("sosAlerts").child(alertId).child("callRequest").child("status").setValue("cancelled");
         }

@@ -129,6 +129,12 @@ public class CallSignalingClient {
                 updates.put("status", "rejected");
                 updates.put("rejectedAt", com.google.firebase.database.ServerValue.TIMESTAMP);
                 callRef.updateChildren(updates);
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    try {
+                        rootRef.child("userCalls").child(myUid).removeValue();
+                        rootRef.child("calls").child(callId).removeValue();
+                    } catch (Exception ignored) {}
+                }, 2500);
             }
 
             @Override
@@ -149,6 +155,15 @@ public class CallSignalingClient {
         if (callId != null && !callId.isEmpty()) {
             rootRef.child("calls").child(callId).updateChildren(updates);
         }
+
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                rootRef.child("userCalls").child(myUid).removeValue();
+                if (callId != null && !callId.isEmpty()) {
+                    rootRef.child("calls").child(callId).removeValue();
+                }
+            } catch (Exception ignored) {}
+        }, 2500);
     }
 
     public void endCall(String myUid, String callId) {
@@ -182,6 +197,30 @@ public class CallSignalingClient {
             @Override
             public void onCancelled(DatabaseError error) {}
         });
+
+        // Bersihkan nod sementara RTDB selepas acara penamatan panggilan
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                rootRef.child("userCalls").child(myUid).removeValue();
+                if (callId != null && !callId.isEmpty()) {
+                    rootRef.child("calls").child(callId).removeValue();
+                }
+                rootRef.child("adminCalls").child("incoming").addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            String callerUid = snapshot.child("callerUid").getValue(String.class);
+                            if (myUid.equals(callerUid)) {
+                                rootRef.child("adminCalls").child("incoming").removeValue();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError error) {}
+                });
+            } catch (Exception ignored) {}
+        }, 2500);
     }
 
     /** Simpan atau hantar data Answer. */

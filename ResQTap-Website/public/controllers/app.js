@@ -221,6 +221,7 @@ const els = {
   profileAvatarImg: document.getElementById("profileAvatarImg"),
   adminProfileSignOutBtn: document.getElementById("adminProfileSignOutBtn"),
   adminPageSignOutBtn: document.getElementById("adminPageSignOutBtn"),
+  sidebarSignOutBtn: document.getElementById("sidebarSignOutBtn"),
   sidebarProfileNavBtn: document.getElementById("sidebarProfileNavBtn"),
   sidebarProfileName: document.getElementById("sidebarProfileName"),
   sidebarProfileRole: document.getElementById("sidebarProfileRole"),
@@ -1421,11 +1422,71 @@ async function syncFromSupabase() {
       state.incidentReports = repMap;
     }
 
+    // 8. System Calls / Call Logs - Disimpan di Supabase sepenuhnya
+    const { data: callsData } = await supabase.from("system_calls").select("*").order("created_at", { ascending: false });
+    if (Array.isArray(callsData)) {
+      const callsMap = {};
+      callsData.forEach((c) => {
+        const raw = c.raw_data || {};
+        callsMap[c.id] = {
+          id: c.id,
+          callType: c.call_type || raw.callType || "video",
+          callerUid: c.caller_uid || raw.callerUid || "",
+          callerName: c.caller_name || raw.callerName || "",
+          calleeUid: raw.calleeUid || "",
+          calleeName: raw.calleeName || "",
+          status: c.status || raw.status || "ended",
+          duration: raw.duration || 0,
+          roomId: c.room_id || raw.roomId || "-",
+          alertId: raw.alertId || "-",
+          source: raw.source || "system_calls",
+          timestamp: raw.timestamp || (c.created_at ? new Date(c.created_at).getTime() : Date.now()),
+          endedAt: raw.endedAt || Date.now()
+        };
+      });
+      state.callLogs = callsMap;
+    }
+
     state.lastSyncAt = Date.now();
     setSyncStatus(`Live Sync: ${new Date(state.lastSyncAt).toLocaleTimeString()}`);
     render();
   } catch (err) {
     console.warn("[SUPABASE_SYNC_ERROR]", err);
+  }
+}
+
+async function saveCallLogToSupabase(logData) {
+  if (!logData || !logData.id) return;
+  try {
+    const payload = {
+      id: logData.id,
+      call_type: logData.callType || "video",
+      caller_uid: logData.callerUid || "",
+      caller_name: logData.callerName || "",
+      room_id: logData.roomId || "-",
+      status: logData.status || "ended",
+      raw_data: {
+        calleeUid: logData.calleeUid || "",
+        calleeName: logData.calleeName || "",
+        duration: logData.duration || 0,
+        endedAt: logData.endedAt || Date.now(),
+        source: logData.source || "system_calls",
+        alertId: logData.alertId || "-",
+        timestamp: logData.timestamp || Date.now()
+      },
+      created_at: new Date(logData.timestamp || Date.now()).toISOString()
+    };
+    if (state.callLogs) {
+      state.callLogs[logData.id] = {
+        ...logData,
+        duration: payload.raw_data.duration,
+        endedAt: payload.raw_data.endedAt
+      };
+      render();
+    }
+    await supabase.from("system_calls").upsert(payload);
+  } catch (err) {
+    console.warn("[SUPABASE_SAVE_CALL_LOG_ERROR]", err);
   }
 }
 
@@ -1516,9 +1577,7 @@ function startDataListeners() {
   subscribe("admin_audit_logs", (value) => {
     state.adminAuditLogs = asRecord(value);
   });
-  subscribe("call_logs", (value) => {
-    state.callLogs = asRecord(value);
-  });
+  // Rekod panggilan kini disimpan dan disegerakkan daripada Supabase system_calls sahaja
   subscribe("admin_notifications", (value) => {
     state.adminNotifications = asRecord(value);
   });
@@ -2984,7 +3043,7 @@ function handleAdminIncomingCall(data) {
                 state.servedCases.add(data.alertId);
               }
             }
-            await update(ref(db, `call_logs/${logId}`), {
+            await saveCallLogToSupabase({
               id: logId,
               callType: data.callType || "video",
               callerUid: data.callerUid || "",
@@ -3013,6 +3072,9 @@ function handleAdminIncomingCall(data) {
               status: "declined",
               declinedAt: serverTimestamp()
             });
+            setTimeout(() => {
+              remove(ref(db, "adminCalls/incoming")).catch(() => {});
+            }, 2500);
             const isRealSosAlert = data.roomId && data.alertId && data.roomId !== "REPORT" && !data.roomId.startsWith("REPORT") && data.roomId !== "-";
             if (isRealSosAlert) {
               await update(ref(db, `rooms/${data.roomId}/sosAlerts/${data.alertId}/callRequest`), {
@@ -3020,7 +3082,7 @@ function handleAdminIncomingCall(data) {
                 declinedAt: serverTimestamp()
               });
             }
-            await update(ref(db, `call_logs/${logId}`), {
+            await saveCallLogToSupabase({
               id: logId,
               callType: data.callType || "video",
               callerUid: data.callerUid || "",
@@ -6320,14 +6382,22 @@ async function deleteNotification(noticeId) {
   const updates = {
     [`admin_notifications/${noticeId}`]: null,
     [`broadcastNotifications/history/${noticeId}`]: null,
-    [`admin_audit_logs/${noticeId}`]: null,
-    [`call_logs/${noticeId}`]: null
+    [`admin_audit_logs/${noticeId}`]: null
   };
   if (text(currentSnapshot.val()).trim() === noticeId) {
     updates["broadcastNotifications/current"] = null;
   }
 
   await update(ref(db), updates);
+  try {
+    await supabase.from("system_calls").delete().eq("id", noticeId);
+    if (state.callLogs && state.callLogs[noticeId]) {
+      delete state.callLogs[noticeId];
+      render();
+    }
+  } catch (err) {
+    console.warn(err);
+  }
   showToast("Notification deleted.");
 }
 
@@ -6660,6 +6730,11 @@ async function setReportStatus(reportId, status, notes = null) {
             userUpdate[`users/${reporterUid}/lastIncidentReportNotes`] = notes !== null ? notes : (repObj?.description || "");
             userUpdate[`users/${reporterUid}/lastIncidentReportUpdatedAt`] = serverTimestamp();
             await update(ref(db), userUpdate);
+            if (meta.id === "resolved" || meta.id === "rejected") {
+              setTimeout(() => {
+                remove(ref(db, `users/${reporterUid}`)).catch(() => {});
+              }, 8000);
+            }
           } catch (uErr) {
             console.warn("[RTDB_USER_SYNC_ERR]", uErr);
           }
@@ -6798,7 +6873,12 @@ async function clearHistory() {
     updates.admin_audit_logs = null;
   }
   if (entries(state.callLogs).length) {
-    updates.call_logs = null;
+    try {
+      await supabase.from("system_calls").delete().neq("id", "_none_");
+      state.callLogs = {};
+    } catch (err) {
+      console.warn(err);
+    }
   }
 
   if (!Object.keys(updates).length) {
@@ -7431,6 +7511,9 @@ function bindEvents() {
   }
   if (els.adminPageSignOutBtn) {
     els.adminPageSignOutBtn.addEventListener("click", handleSignOut);
+  }
+  if (els.sidebarSignOutBtn) {
+    els.sidebarSignOutBtn.addEventListener("click", handleSignOut);
   }
 
   // Dark Mode Toggle Logic
@@ -8187,7 +8270,7 @@ async function startAdminCall(uid, name, callType = "video", existingCallLogId =
     const logId = `call_${Date.now()}`;
     vcActiveCallLogId = logId;
     vcActiveCallStartTime = Date.now();
-    update(ref(db, `call_logs/${logId}`), {
+    saveCallLogToSupabase({
       id: logId,
       callType: vcCurrentCallType,
       callerUid: state.currentUser ? state.currentUser.uid : "admin",
@@ -8198,7 +8281,7 @@ async function startAdminCall(uid, name, callType = "video", existingCallLogId =
       roomId: "-",
       timestamp: Date.now(),
       source: "admin_outgoing_call"
-    }).catch(() => {});
+    });
   }
 
   const userPhoto = state.users?.[uid]?.photoUrl;
@@ -8604,11 +8687,12 @@ function endAdminCall(preserveStatus = false) {
 
   if (vcActiveCallLogId) {
     const durationSec = vcActiveCallStartTime ? Math.max(0, Math.round((Date.now() - vcActiveCallStartTime) / 1000)) : 0;
-    update(ref(db, `call_logs/${vcActiveCallLogId}`), {
+    saveCallLogToSupabase({
+      id: vcActiveCallLogId,
       status: preserveStatus ? "chat_instead" : "ended",
       endedAt: Date.now(),
       duration: durationSec
-    }).catch(() => {});
+    });
     vcActiveCallLogId = null;
     vcActiveCallStartTime = null;
   }
@@ -8624,6 +8708,10 @@ function endAdminCall(preserveStatus = false) {
       }, 2500);
     }
     remove(ref(db, "calls/" + callIdToClean)).catch(() => {});
+    setTimeout(() => {
+      remove(ref(db, "userCalls/" + targetUidToClean)).catch(() => {});
+    }, 2500);
+    remove(ref(db, "adminCalls/incoming")).catch(() => {});
   }
 
   if (vcPeerConnection) {

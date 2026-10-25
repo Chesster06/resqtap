@@ -845,6 +845,11 @@ public class LivechatActivity extends BaseActivity {
         CallSignalingClient.setAwaitingSosResponse(false);
         DatabaseReference rtdb = FirebaseDatabase.getInstance(FirebaseRoomClient.DATABASE_URL).getReference();
         rtdb.child("adminCalls").child("incoming").child("status").setValue("cancelled");
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                rtdb.child("adminCalls").child("incoming").removeValue();
+            } catch (Exception ignored) {}
+        }, 2000);
     }
 
     private void stopCallListening() {
