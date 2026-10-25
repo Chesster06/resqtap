@@ -5160,12 +5160,22 @@ function renderHighlights() {
   const hlCount = document.getElementById("highlightsCount");
   if (!hlGrid) return;
 
-  const items = entries(state.highlights)
+  const rawItems = entries(state.highlights)
     .map(([id, value]) => ({
       id,
       ...asRecord(value)
     }))
     .sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
+
+  // Deduplicate items so identical title records do not duplicate cards
+  const seenTitles = new Set();
+  const items = [];
+  for (const item of rawItems) {
+    const key = (item.title || "").trim().toLowerCase();
+    if (key && seenTitles.has(key)) continue;
+    if (key) seenTitles.add(key);
+    items.push(item);
+  }
 
   if (hlCount) hlCount.textContent = `${items.length} banner${items.length === 1 ? "" : "s"}`;
 

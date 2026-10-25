@@ -314,7 +314,19 @@ public class MainActivity extends BaseActivity {
             }
         }
 
-        java.util.List<HighlightItem> list = new java.util.ArrayList<>(merged.values());
+        java.util.List<HighlightItem> rawList = new java.util.ArrayList<>(merged.values());
+
+        // Deduplicate items so same banner title does not show twice
+        java.util.Set<String> seenTitles = new java.util.HashSet<>();
+        java.util.List<HighlightItem> list = new java.util.ArrayList<>();
+        for (HighlightItem item : rawList) {
+            String titleKey = (item.getTitle() != null ? item.getTitle().trim().toLowerCase() : "");
+            if (!titleKey.isEmpty() && seenTitles.contains(titleKey)) {
+                continue;
+            }
+            if (!titleKey.isEmpty()) seenTitles.add(titleKey);
+            list.add(item);
+        }
 
         if (list.isEmpty()) {
             list.add(new HighlightItem("hl_cpr_2026", "Latihan CPR & Pertolongan Cemas Komuniti 2026", R.drawable.img_highlight_1, "https://www.moh.gov.my"));
