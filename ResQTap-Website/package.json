@@ -4,7 +4,6 @@
   "description": "ResQTap Website & Admin Dashboard",
   "scripts": {
     "start": "node server.js",
-    "deploy": "firebase deploy --only hosting",
-    "watch:deploy": "node auto_deploy_watcher.js"
+    "deploy": "firebase deploy --only hosting"
   }
 }

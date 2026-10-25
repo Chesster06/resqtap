@@ -154,10 +154,9 @@ npm start
 - Public Portal & Download: `http://localhost:5000`
 - Admin Operations Dashboard: `http://localhost:5000/admin`
 
-#### Auto-Deploy to Firebase Hosting
+#### Deploy to Firebase Hosting
 ```bash
-cd ResQTap-Website
-npm run watch:deploy
+firebase deploy --only hosting
 ```
 
 ---
@@ -188,7 +187,6 @@ npm run watch:deploy
 ├── ResQTap-Website/                    # Public portal & administrative operations dashboard
 │   ├── public/                         # Static assets, SPA client, styles, APK binaries
 │   ├── server/                         # MVC backend server (admin API & static routing)
-│   ├── auto_deploy_watcher.js          # File watcher triggering Firebase Hosting deploys
 │   └── package.json                    # Node dependencies & npm commands
 ├── firebase-functions/                 # Serverless Cloud Functions (Node.js 18)
 │   ├── index.js                        # FCM trigger routing, AI proxy, automated cleanup
