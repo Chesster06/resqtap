@@ -192,10 +192,9 @@ firebase deploy --only hosting
 │   ├── index.js                        # FCM trigger routing, AI proxy, automated cleanup
 │   └── package.json                    # Cloud Functions dependencies
 ├── database/                           # Relational database schemas & SQL migrations
-│   ├── migrations/                     # Supabase PostgreSQL relational schemas
-│   │   ├── supabase_schema.sql         # Primary PostgreSQL database migration script
-│   │   └── supabase_additional_tables.sql # Auxiliary relational tables migration script
-│   └── README.md                       # Migration order and execution guide
+│   └── migrations/                     # Supabase PostgreSQL relational schemas
+│       ├── supabase_schema.sql         # Primary PostgreSQL database migration script
+│       └── supabase_additional_tables.sql # Auxiliary relational tables migration script
 ├── database.rules.json                 # Firebase Realtime Database security rules
 ├── storage.rules                       # Firebase Cloud Storage security rules
 ├── firebase.json                       # Firebase project configuration & routing rules
