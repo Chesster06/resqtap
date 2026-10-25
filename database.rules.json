@@ -227,8 +227,8 @@
       }
     },
     "highlights": {
-      ".read": "true",
-      ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)"
+      ".read": "false",
+      ".write": "false"
     },
     "userCalls": {
       "$uid": {
