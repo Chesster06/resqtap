@@ -4536,11 +4536,8 @@ function renderLivechat() {
           <span>${escapeHtml(thread.lastMessage || "No messages yet")}</span>
           <span class="cell-meta">${escapeHtml(thread.email || thread.uid)} - ${escapeHtml(ageLabel(thread.updatedAt))}</span>
         </span>
-        <span style="display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; gap:4px; align-self:stretch;">
+        <span style="display:flex; flex-direction:column; align-items:flex-end; justify-content:center; gap:4px; align-self:stretch;">
           ${thread.unread ? `<span class="livechat-unread" aria-label="Unread user reply"></span>` : `<span></span>`}
-          <span class="small-icon-delete" data-action="delete-support-thread-quick" data-uid="${escapeHtml(thread.uid)}" title="Padam perbualan ini" role="button" tabindex="0">
-            ${icon("trash-2")}
-          </span>
         </span>
       </button>
     `;
@@ -4610,7 +4607,9 @@ function renderLivechat() {
   }
   updateLivechatComposer();
 
-  els.livechatMessages.innerHTML = selectedThread.messages.length ? selectedThread.messages.map((message) => {
+  els.livechatMessages.innerHTML = selectedThread.messages.length ? selectedThread.messages
+    .filter((message) => !text(message.text).toLowerCase().includes("claimed your ticket"))
+    .map((message) => {
     const fromAdmin = message.sender === "admin";
     const fromSystem = message.sender === "system";
     const fromAi = message.sender === "ai" || message.sender === "assistant";
@@ -4642,19 +4641,11 @@ function renderLivechat() {
 
     const msgClass = fromAdmin ? "from-admin" : (fromSystem ? "from-system" : (fromAi ? "from-ai" : "from-user"));
 
-    const canDeleteMsg = Boolean(message.id);
-    const deleteBtnHtml = canDeleteMsg ? `
-      <span class="msg-delete-btn" data-action="delete-livechat-msg" data-msg-id="${escapeHtml(message.id)}" title="Padam mesej" role="button" tabindex="0">
-        ${icon("trash-2")}
-      </span>
-    ` : "";
-
     return `
       <div class="livechat-message ${msgClass}">
         <div class="livechat-bubble">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
             <span class="livechat-sender">${escapeHtml(sender)}${badgeHtml}</span>
-            ${deleteBtnHtml}
           </div>
           ${message.text ? `<p>${escapeHtml(message.text)}</p>` : ""}
           ${attachmentHtml}
@@ -4731,11 +4722,8 @@ function renderTicketLivechat() {
           <span>${escapeHtml(thread.lastMessage || "No messages yet")}</span>
           <span class="cell-meta">${escapeHtml(thread.email || thread.uid)} - ${escapeHtml(ageLabel(thread.updatedAt))}</span>
         </span>
-        <span style="display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; gap:4px; align-self:stretch;">
+        <span style="display:flex; flex-direction:column; align-items:flex-end; justify-content:center; gap:4px; align-self:stretch;">
           ${thread.unread ? `<span class="livechat-unread" aria-label="Unread user reply"></span>` : `<span></span>`}
-          <span class="small-icon-delete" data-action="delete-ticket-quick" data-uid="${escapeHtml(thread.uid)}" title="Padam tiket ini" role="button" tabindex="0">
-            ${icon("trash-2")}
-          </span>
         </span>
       </button>
     `;
@@ -4827,7 +4815,9 @@ function renderTicketLivechat() {
 
   updateTicketComposer();
 
-  els.ticketlivechatMessages.innerHTML = selectedThread.messages.length ? selectedThread.messages.map((message) => {
+  els.ticketlivechatMessages.innerHTML = selectedThread.messages.length ? selectedThread.messages
+    .filter((message) => !text(message.text).toLowerCase().includes("claimed your ticket"))
+    .map((message) => {
     const fromAdmin = message.sender === "admin";
     const fromSystem = message.sender === "system";
     const fromAi = message.sender === "ai" || message.sender === "assistant";
@@ -4858,19 +4848,12 @@ function renderTicketLivechat() {
     ` : "";
 
     const msgClass = fromAdmin ? "from-admin" : (fromSystem ? "from-system" : (fromAi ? "from-ai" : "from-user"));
-    const canDeleteMsg = Boolean(message.id);
-    const deleteBtnHtml = canDeleteMsg ? `
-      <span class="msg-delete-btn" data-action="delete-ticket-msg" data-msg-id="${escapeHtml(message.id)}" data-store="${escapeHtml(selectedThread.store || "ticketChats")}" title="Padam mesej" role="button" tabindex="0">
-        ${icon("trash-2")}
-      </span>
-    ` : "";
 
     return `
       <div class="livechat-message ${msgClass}">
         <div class="livechat-bubble">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
             <span class="livechat-sender">${escapeHtml(sender)}${badgeHtml}</span>
-            ${deleteBtnHtml}
           </div>
           ${message.text ? `<p>${escapeHtml(message.text)}</p>` : ""}
           ${attachmentHtml}
