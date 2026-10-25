@@ -1375,12 +1375,12 @@ async function syncFromSupabase() {
       state.medicalCards = mcMap;
     }
 
-    // 3. Highlights
+    // 3. Highlights (Supabase ONLY)
     const { data: hl } = await supabase.from("highlights").select("*").order("display_order", { ascending: true });
-    if (Array.isArray(hl) && hl.length > 0 && (!state.highlights || Object.keys(state.highlights).length === 0)) {
-      const hlSyncUpdates = {};
+    if (Array.isArray(hl)) {
+      const hlMap = {};
       hl.forEach((h) => {
-        hlSyncUpdates[`highlights/${h.id}`] = {
+        hlMap[h.id] = {
           id: h.id,
           title: h.title,
           imageUrl: h.image_url,
@@ -1389,9 +1389,8 @@ async function syncFromSupabase() {
           active: h.active !== false
         };
       });
-      if (Object.keys(hlSyncUpdates).length > 0) {
-        update(ref(db), hlSyncUpdates).catch((e) => console.warn("Auto-sync highlights to RTDB:", e));
-      }
+      state.highlights = hlMap;
+      renderHighlights();
     }
 
     // 5. Rooms
@@ -1618,10 +1617,6 @@ function startDataListeners() {
   subscribe("aiChats", (value) => {
     state.aiChats = asRecord(value);
     cleanupExpiredAiChats().catch((error) => console.warn(error));
-  });
-  subscribe("highlights", (value) => {
-    state.highlights = asRecord(value);
-    renderHighlights();
   });
   subscribe("adminCalls/incoming", (value) => {
     handleAdminIncomingCall(value);
@@ -6989,50 +6984,14 @@ async function deleteRoom(roomId) {
 }
 
 async function seedDefaultHighlights() {
-  const updates = {
-    "highlights/hl_cpr_2026": {
-      id: "hl_cpr_2026",
-      title: "Latihan CPR & Pertolongan Cemas Komuniti 2026",
-      imageUrl: "assets/highlight_1.jpg",
-      actionUrl: "https://www.moh.gov.my",
-      order: 1,
-      active: true,
-      createdAt: serverTimestamp()
-    },
-    "highlights/hl_derma_darah": {
-      id: "hl_derma_darah",
-      title: "Kempen Derma Darah Selamatkan Nyawa (PDN)",
-      imageUrl: "assets/highlight_2.jpg",
-      actionUrl: "https://pdn.gov.my",
-      order: 2,
-      active: true,
-      createdAt: serverTimestamp()
-    },
-    "highlights/hl_peka_b40": {
-      id: "hl_peka_b40",
-      title: "Skim Saringan Kesihatan Percuma PeKa B40",
-      imageUrl: "assets/highlight_3.jpg",
-      actionUrl: "https://pekab40.com.my",
-      order: 3,
-      active: true,
-      createdAt: serverTimestamp()
-    }
-  };
-
   try {
-    await update(ref(db), updates);
-    // Persist to Supabase
-    try {
-      await supabase.from("highlights").upsert([
-        { id: "hl_cpr_2026", title: "Latihan CPR & Pertolongan Cemas Komuniti 2026", image_url: "assets/highlight_1.jpg", action_url: "https://www.moh.gov.my", display_order: 1, active: true },
-        { id: "hl_derma_darah", title: "Kempen Derma Darah Selamatkan Nyawa (PDN)", image_url: "assets/highlight_2.jpg", action_url: "https://pdn.gov.my", display_order: 2, active: true },
-        { id: "hl_peka_b40", title: "Skim Saringan Kesihatan Percuma PeKa B40", image_url: "assets/highlight_3.jpg", action_url: "https://pekab40.com.my", display_order: 3, active: true }
-      ]);
-      syncFromSupabase();
-    } catch (sErr) {
-      console.warn("[SUPABASE_HL_SEED_ERR]", sErr);
-    }
-    showToast("3 Banner Kempen Inklusi OKU rasmi berjaya dimuatkan ke Firebase & Supabase!");
+    await supabase.from("highlights").upsert([
+      { id: "hl_cpr_2026", title: "Latihan CPR & Pertolongan Cemas Komuniti 2026", image_url: "assets/highlight_1.jpg", action_url: "https://www.moh.gov.my", display_order: 1, active: true },
+      { id: "hl_derma_darah", title: "Kempen Derma Darah Selamatkan Nyawa (PDN)", image_url: "assets/highlight_2.jpg", action_url: "https://pdn.gov.my", display_order: 2, active: true },
+      { id: "hl_peka_b40", title: "Skim Saringan Kesihatan Percuma PeKa B40", image_url: "assets/highlight_3.jpg", action_url: "https://pekab40.com.my", display_order: 3, active: true }
+    ]);
+    await syncFromSupabase();
+    showToast("3 Banner Kempen Inklusi OKU rasmi berjaya dimuatkan ke Supabase!");
   } catch (error) {
     console.error(error);
     showToast(error.message || "Gagal memuatkan banner default.");
@@ -7742,12 +7701,11 @@ function handleAction(button) {
       const hlId = button.dataset.highlightId;
       const curActive = button.dataset.active === "true";
       if (hlId) {
-        await update(ref(db, `highlights/${hlId}`), { active: !curActive });
-        try {
-          await supabase.from("highlights").update({ active: !curActive }).eq("id", hlId);
-        } catch (sErr) {
-          console.warn("[SUPABASE_HL_TOGGLE_ERR]", sErr);
+        await supabase.from("highlights").update({ active: !curActive }).eq("id", hlId);
+        if (state.highlights && state.highlights[hlId]) {
+          state.highlights[hlId].active = !curActive;
         }
+        renderHighlights();
         showToast(curActive ? "Highlight hidden from mobile." : "Highlight active on mobile.");
       }
     }
@@ -7799,14 +7757,12 @@ function handleAction(button) {
     if (action === "delete-highlight") {
       const hlId = button.dataset.highlightId;
       if (hlId && window.confirm("Delete this highlight banner permanently?")) {
-        await remove(ref(db, `highlights/${hlId}`));
-        try {
-          await supabase.from("highlights").delete().eq("id", hlId);
-        } catch (sErr) {
-          console.warn("[SUPABASE_HL_DEL_ERR]", sErr);
+        await supabase.from("highlights").delete().eq("id", hlId);
+        if (state.highlights) {
+          delete state.highlights[hlId];
         }
-        delete state.highlights[hlId];
-        showToast("Highlight banner deleted.");
+        renderHighlights();
+        showToast("Highlight banner deleted from Supabase.");
       }
     }
     if (action === "seed-default-highlights") {
@@ -8257,47 +8213,37 @@ function bindEvents() {
       }
 
       try {
-        const targetId = editingId || push(ref(db, "highlights")).key || `hl_${Date.now()}`;
+        const targetId = editingId || `hl_${Date.now()}`;
+        await supabase.from("highlights").upsert({
+          id: targetId,
+          title: title,
+          image_url: imageUrl,
+          action_url: actionUrl,
+          display_order: order,
+          active: true
+        });
+
+        if (!state.highlights) state.highlights = {};
+        state.highlights[targetId] = {
+          id: targetId,
+          title,
+          imageUrl,
+          actionUrl,
+          order,
+          active: true
+        };
+
         if (editingId) {
-          await update(ref(db, `highlights/${editingId}`), {
-            title,
-            imageUrl,
-            actionUrl,
-            order,
-            updatedAt: serverTimestamp()
-          });
           delete hlForm.dataset.editingId;
           delete hlForm.dataset.currentImageUrl;
           const saveBtn = document.getElementById("saveHighlightBtn");
           if (saveBtn) saveBtn.innerHTML = `${icon("plus")}<span>Add Highlight Banner</span>`;
-          showToast("Highlight banner updated successfully!");
+          showToast("Highlight banner updated in Supabase successfully!");
         } else {
-          await set(ref(db, `highlights/${targetId}`), {
-            id: targetId,
-            title,
-            imageUrl,
-            actionUrl,
-            order,
-            active: true,
-            createdAt: serverTimestamp()
-          });
-          showToast("Highlight banner added successfully!");
+          showToast("Highlight banner added to Supabase successfully!");
         }
 
-        // Persist to Supabase
-        try {
-          await supabase.from("highlights").upsert({
-            id: targetId,
-            title: title,
-            image_url: imageUrl,
-            action_url: actionUrl,
-            display_order: order,
-            active: true
-          });
-          syncFromSupabase();
-        } catch (sErr) {
-          console.warn("[SUPABASE_HL_SAVE_ERR]", sErr);
-        }
+        renderHighlights();
 
         hlForm.reset();
         if (hlPreview) hlPreview.style.display = "none";

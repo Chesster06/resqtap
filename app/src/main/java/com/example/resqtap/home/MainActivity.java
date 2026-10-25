@@ -341,76 +341,40 @@ public class MainActivity extends BaseActivity {
             public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {}
         });
 
-        // Realtime listener to Firebase Realtime Database (Single Source of Truth)
-        DatabaseReference hlRef = FirebaseDatabase.getInstance().getReference("highlights");
-        hlRef.addValueEventListener(new ValueEventListener() {
+        loadHighlightsFromSupabase();
+    }
+
+    private void loadHighlightsFromSupabase() {
+        com.example.resqtap.supabase.SupabaseManager.getInstance().getHighlights(new com.example.resqtap.supabase.SupabaseManager.Callback<org.json.JSONArray>() {
             @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                java.util.List<HighlightItem> list = new java.util.ArrayList<>();
-                if (snapshot.exists() && snapshot.getChildrenCount() > 0) {
-                    for (DataSnapshot child : snapshot.getChildren()) {
-                        HighlightItem item = child.getValue(HighlightItem.class);
-                        if (item != null) {
-                            String id = item.getId();
-                            if (id == null || id.isEmpty()) {
-                                id = child.getKey();
-                                item.setId(id);
+            public void onSuccess(org.json.JSONArray sResult) {
+                java.util.List<HighlightItem> sList = new java.util.ArrayList<>();
+                if (sResult != null && sResult.length() > 0) {
+                    for (int i = 0; i < sResult.length(); i++) {
+                        try {
+                            org.json.JSONObject obj = sResult.getJSONObject(i);
+                            String id = obj.optString("id", "hl_" + i);
+                            String title = obj.optString("title", "");
+                            String imgUrl = obj.optString("image_url", "");
+                            String actUrl = obj.optString("action_url", "");
+                            int ord = obj.optInt("display_order", i + 1);
+                            boolean act = obj.optBoolean("active", true);
+                            if (act) {
+                                sList.add(new HighlightItem(id, title, imgUrl, actUrl, true, System.currentTimeMillis(), ord));
                             }
-                            if (item.isActive()) {
-                                list.add(item);
-                            }
-                        }
+                        } catch (Exception ignored) {}
                     }
                 }
-
-                // If completely empty in RTDB, fallback to Supabase or seed defaults
-                if (list.isEmpty()) {
-                    com.example.resqtap.supabase.SupabaseManager.getInstance().getHighlights(new com.example.resqtap.supabase.SupabaseManager.Callback<org.json.JSONArray>() {
-                        @Override
-                        public void onSuccess(org.json.JSONArray sResult) {
-                            java.util.List<HighlightItem> sList = new java.util.ArrayList<>();
-                            if (sResult != null && sResult.length() > 0) {
-                                for (int i = 0; i < sResult.length(); i++) {
-                                    try {
-                                        org.json.JSONObject obj = sResult.getJSONObject(i);
-                                        String id = obj.optString("id", "hl_" + i);
-                                        String title = obj.optString("title", "");
-                                        String imgUrl = obj.optString("image_url", "");
-                                        String actUrl = obj.optString("action_url", "");
-                                        int ord = obj.optInt("display_order", i + 1);
-                                        boolean act = obj.optBoolean("active", true);
-                                        if (act) {
-                                            sList.add(new HighlightItem(id, title, imgUrl, actUrl, true, System.currentTimeMillis(), ord));
-                                        }
-                                    } catch (Exception ignored) {}
-                                }
-                            }
-                            if (sList.isEmpty()) {
-                                sList.add(new HighlightItem("hl_cpr_2026", "Latihan CPR & Pertolongan Cemas Komuniti 2026", R.drawable.img_highlight_1, "https://www.moh.gov.my"));
-                                sList.add(new HighlightItem("hl_derma_darah", "Kempen Derma Darah Selamatkan Nyawa (PDN)", R.drawable.img_highlight_2, "https://pdn.gov.my"));
-                                sList.add(new HighlightItem("hl_peka_b40", "Skim Saringan Kesihatan Percuma PeKa B40", R.drawable.img_highlight_3, "https://pekab40.com.my"));
-                            }
-                            seedHighlightsToFirebase(hlRef);
-                            sortAndSubmitHighlights(sList);
-                        }
-
-                        @Override
-                        public void onError(Exception error) {
-                            java.util.List<HighlightItem> def = new java.util.ArrayList<>();
-                            def.add(new HighlightItem("hl_cpr_2026", "Latihan CPR & Pertolongan Cemas Komuniti 2026", R.drawable.img_highlight_1, "https://www.moh.gov.my"));
-                            def.add(new HighlightItem("hl_derma_darah", "Kempen Derma Darah Selamatkan Nyawa (PDN)", R.drawable.img_highlight_2, "https://pdn.gov.my"));
-                            def.add(new HighlightItem("hl_peka_b40", "Skim Saringan Kesihatan Percuma PeKa B40", R.drawable.img_highlight_3, "https://pekab40.com.my"));
-                            sortAndSubmitHighlights(def);
-                        }
-                    });
-                    return;
+                if (sList.isEmpty()) {
+                    sList.add(new HighlightItem("hl_cpr_2026", "Latihan CPR & Pertolongan Cemas Komuniti 2026", R.drawable.img_highlight_1, "https://www.moh.gov.my"));
+                    sList.add(new HighlightItem("hl_derma_darah", "Kempen Derma Darah Selamatkan Nyawa (PDN)", R.drawable.img_highlight_2, "https://pdn.gov.my"));
+                    sList.add(new HighlightItem("hl_peka_b40", "Skim Saringan Kesihatan Percuma PeKa B40", R.drawable.img_highlight_3, "https://pekab40.com.my"));
                 }
-
-                sortAndSubmitHighlights(list);
+                sortAndSubmitHighlights(sList);
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {
+            public void onError(Exception error) {
                 java.util.List<HighlightItem> def = new java.util.ArrayList<>();
                 def.add(new HighlightItem("hl_cpr_2026", "Latihan CPR & Pertolongan Cemas Komuniti 2026", R.drawable.img_highlight_1, "https://www.moh.gov.my"));
                 def.add(new HighlightItem("hl_derma_darah", "Kempen Derma Darah Selamatkan Nyawa (PDN)", R.drawable.img_highlight_2, "https://pdn.gov.my"));
@@ -439,45 +403,6 @@ public class MainActivity extends BaseActivity {
 
         if (highlightAdapter != null) {
             highlightAdapter.submitList(clean);
-        }
-    }
-
-    private void seedHighlightsToFirebase(DatabaseReference hlRef) {
-        try {
-            java.util.Map<String, Object> map1 = new java.util.HashMap<>();
-            map1.put("id", "hl_cpr_2026");
-            map1.put("title", "Latihan CPR & Pertolongan Cemas Komuniti 2026");
-            map1.put("imageUrl", "assets/highlight_1.jpg");
-            map1.put("actionUrl", "https://www.moh.gov.my");
-            map1.put("order", 1);
-            map1.put("active", true);
-            map1.put("createdAt", System.currentTimeMillis());
-
-            java.util.Map<String, Object> map2 = new java.util.HashMap<>();
-            map2.put("id", "hl_derma_darah");
-            map2.put("title", "Kempen Derma Darah Selamatkan Nyawa (PDN)");
-            map2.put("imageUrl", "assets/highlight_2.jpg");
-            map2.put("actionUrl", "https://pdn.gov.my");
-            map2.put("order", 2);
-            map2.put("active", true);
-            map2.put("createdAt", System.currentTimeMillis());
-
-            java.util.Map<String, Object> map3 = new java.util.HashMap<>();
-            map3.put("id", "hl_peka_b40");
-            map3.put("title", "Skim Saringan Kesihatan Percuma PeKa B40");
-            map3.put("imageUrl", "assets/highlight_3.jpg");
-            map3.put("actionUrl", "https://pekab40.com.my");
-            map3.put("order", 3);
-            map3.put("active", true);
-            map3.put("createdAt", System.currentTimeMillis());
-
-            java.util.Map<String, Object> updates = new java.util.HashMap<>();
-            updates.put("hl_cpr_2026", map1);
-            updates.put("hl_derma_darah", map2);
-            updates.put("hl_peka_b40", map3);
-
-            hlRef.updateChildren(updates);
-        } catch (Exception ignored) {
         }
     }
 
@@ -593,6 +518,7 @@ public class MainActivity extends BaseActivity {
         checkActiveSosCase();
         refreshProfileUi();
         refreshInboxBadge();
+        loadHighlightsFromSupabase();
         try { BatteryOptimizationHelper.promptOnce(this); } catch (Exception ignored) {}
         ensureActiveRoomTracking();
         startSosRingPulse();
