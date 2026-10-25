@@ -4940,25 +4940,12 @@ async function resolveSelectedTicket(uid = state.selectedTicketUid, store = "tic
   const stores = Array.from(new Set([targetStore, "ticketChats", "supportChats"]));
 
   const updates = {};
-  const sysMsg = {
-    text: "The live support session has been marked resolved and closed by Admin.",
-    sender: "system",
-    senderUid: "system",
-    senderName: "System",
-    createdAt: serverTimestamp()
-  };
-
   for (const s of stores) {
     updates[`${s}/${uid}/meta/status`] = "resolved";
     updates[`${s}/${uid}/meta/resolvedAt`] = serverTimestamp();
     updates[`${s}/${uid}/meta/resolvedBy`] = state.currentUser ? state.currentUser.uid : "";
     updates[`${s}/${uid}/meta/resolvedByName`] = adminName;
     updates[`${s}/${uid}/meta/updatedAt`] = serverTimestamp();
-
-    const msgRef = push(ref(db, `${s}/${uid}/messages`));
-    if (msgRef.key) {
-      updates[`${s}/${uid}/messages/${msgRef.key}`] = sysMsg;
-    }
   }
 
   await update(ref(db), updates);

@@ -639,10 +639,21 @@ public class ChatActivity extends BaseActivity {
                                 .apply();
                         updateUiForLiveChat(false);
 
-                        ChatMessage endedNotice = new ChatMessage("system", getString(R.string.livechat_session_ended_notice), System.currentTimeMillis());
-                        messages.add(endedNotice);
-                        addSystemNoticeBubble(endedNotice.content);
-                        scrollToBottom();
+                        boolean alreadyHasResolvedNotice = false;
+                        for (ChatMessage m : messages) {
+                            if (m.content != null && (m.content.toLowerCase(Locale.ROOT).contains("marked resolved")
+                                    || m.content.toLowerCase(Locale.ROOT).contains("diselesaikan dan ditamatkan")
+                                    || m.content.toLowerCase(Locale.ROOT).contains("session has been marked resolved"))) {
+                                alreadyHasResolvedNotice = true;
+                                break;
+                            }
+                        }
+                        if (!alreadyHasResolvedNotice) {
+                            ChatMessage endedNotice = new ChatMessage("system", getString(R.string.livechat_session_ended_notice), System.currentTimeMillis());
+                            messages.add(endedNotice);
+                            addSystemNoticeBubble(endedNotice.content);
+                            scrollToBottom();
+                        }
                         if (RateServiceManager.getInstance() != null) {
                             RateServiceManager.getInstance().scheduleRatingPrompt(resolvedAt > 0 ? resolvedAt : System.currentTimeMillis());
                         }
@@ -734,6 +745,18 @@ public class ChatActivity extends BaseActivity {
                         String attMime = safe(attSnap.child("mimeType").getValue(String.class));
                         if (text.isEmpty() && attUrl.isEmpty()) continue;
                         if (text.toLowerCase(Locale.ROOT).contains("claimed your ticket")) continue;
+                        if (text.toLowerCase(Locale.ROOT).contains("marked resolved") || text.toLowerCase(Locale.ROOT).contains("session has been marked resolved") || text.toLowerCase(Locale.ROOT).contains("diselesaikan dan ditamatkan")) {
+                            boolean hasNotice = false;
+                            for (ChatMessage m : messages) {
+                                if (m.content != null && (m.content.toLowerCase(Locale.ROOT).contains("marked resolved")
+                                        || m.content.toLowerCase(Locale.ROOT).contains("session has been marked resolved")
+                                        || m.content.toLowerCase(Locale.ROOT).contains("diselesaikan dan ditamatkan"))) {
+                                    hasNotice = true;
+                                    break;
+                                }
+                            }
+                            if (hasNotice) continue;
+                        }
 
                         long createdAt = snapshotLong(child.child("createdAt"));
                         if (createdAt <= 0L) {
@@ -789,6 +812,18 @@ public class ChatActivity extends BaseActivity {
                         String attMime = safe(attSnap.child("mimeType").getValue(String.class));
                         if (text.isEmpty() && attUrl.isEmpty()) continue;
                         if (text.toLowerCase(Locale.ROOT).contains("claimed your ticket")) continue;
+                        if (text.toLowerCase(Locale.ROOT).contains("marked resolved") || text.toLowerCase(Locale.ROOT).contains("session has been marked resolved") || text.toLowerCase(Locale.ROOT).contains("diselesaikan dan ditamatkan")) {
+                            boolean hasNotice = false;
+                            for (ChatMessage m : messages) {
+                                if (m.content != null && (m.content.toLowerCase(Locale.ROOT).contains("marked resolved")
+                                        || m.content.toLowerCase(Locale.ROOT).contains("session has been marked resolved")
+                                        || m.content.toLowerCase(Locale.ROOT).contains("diselesaikan dan ditamatkan"))) {
+                                    hasNotice = true;
+                                    break;
+                                }
+                            }
+                            if (hasNotice) continue;
+                        }
 
                         String sender = safe(child.child("sender").getValue(String.class));
                         String senderName = safe(child.child("senderName").getValue(String.class));
@@ -2027,6 +2062,17 @@ public class ChatActivity extends BaseActivity {
         if ("system".equalsIgnoreCase(message.role)) {
             if (message.content != null && message.content.toLowerCase(Locale.ROOT).contains("claimed your ticket")) {
                 return null;
+            }
+            if (message.content != null && (message.content.toLowerCase(Locale.ROOT).contains("marked resolved")
+                    || message.content.toLowerCase(Locale.ROOT).contains("session has been marked resolved")
+                    || message.content.toLowerCase(Locale.ROOT).contains("diselesaikan dan ditamatkan"))) {
+                for (ChatMessage m : messages) {
+                    if (m != message && m.content != null && (m.content.toLowerCase(Locale.ROOT).contains("marked resolved")
+                            || m.content.toLowerCase(Locale.ROOT).contains("session has been marked resolved")
+                            || m.content.toLowerCase(Locale.ROOT).contains("diselesaikan dan ditamatkan"))) {
+                        return null;
+                    }
+                }
             }
             addSystemNoticeBubble(message.content);
             return null;
