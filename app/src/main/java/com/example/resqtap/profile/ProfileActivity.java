@@ -185,30 +185,7 @@ public class ProfileActivity extends BaseActivity {
         }
 
         if (headerPhotoView != null) {
-            if (photoB64 != null && !photoB64.trim().isEmpty()) {
-                try {
-                    byte[] bytes = android.util.Base64.decode(photoB64.trim(), android.util.Base64.DEFAULT);
-                    android.graphics.Bitmap b = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    if (b != null) headerPhotoView.setImageBitmap(b);
-                    else headerPhotoView.setImageResource(R.drawable.ic_avatar);
-                } catch (Exception ignored) {
-                    headerPhotoView.setImageResource(R.drawable.ic_avatar);
-                }
-                return;
-            }
-            if (photoUri != null && !photoUri.trim().isEmpty()) {
-                try {
-                    headerPhotoView.setImageURI(Uri.parse(photoUri));
-                    return;
-                } catch (Exception ignored) {
-                }
-            }
-            if (photoUrl != null && !photoUrl.trim().isEmpty()) {
-                headerPhotoView.setImageResource(R.drawable.ic_avatar);
-                loadRemotePhotoInto(headerPhotoView, photoUrl.trim());
-                return;
-            }
-            headerPhotoView.setImageResource(R.drawable.ic_avatar);
+            com.example.resqtap.utils.AvatarUtils.applyAvatar(headerPhotoView, photoB64, photoUrl, photoUri, R.drawable.ic_avatar);
         }
     }
 
