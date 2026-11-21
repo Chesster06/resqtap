@@ -299,6 +299,7 @@ public class FirebaseFriendClient {
 
         Map<String, Object> notif = new HashMap<>();
         notif.put("id", notifId);
+        notif.put("fromUid", fUid);
         notif.put("title", notifTitle);
         notif.put("message", notifMsg);
         notif.put("createdAt", ServerValue.TIMESTAMP);
@@ -313,7 +314,10 @@ public class FirebaseFriendClient {
         String fUid = String.valueOf(request.fromUid == null ? "" : request.fromUid).trim();
         if (cUid.isEmpty() || fUid.isEmpty() || !QrCodeUtils.isValidFirebaseKey(cUid) || !QrCodeUtils.isValidFirebaseKey(fUid)) throw new RuntimeException("invalid_uids");
 
-        DataSnapshot fromUserSnap = await(db().child("users").child(fUid).get());
+        DataSnapshot fromUserSnap = null;
+        try {
+            fromUserSnap = await(db().child("users").child(fUid).get());
+        } catch (Exception ignored) {}
         String fName = request.fromName;
         String fPhoto = request.fromPhotoUrl;
         String fB64 = request.fromPhotoB64;
@@ -325,7 +329,10 @@ public class FirebaseFriendClient {
             if (fPublicId.isEmpty()) fPublicId = String.valueOf(fromUserSnap.child("publicId").getValue() == null ? "" : fromUserSnap.child("publicId").getValue()).trim();
         }
 
-        DataSnapshot currentUserSnap = await(db().child("users").child(cUid).get());
+        DataSnapshot currentUserSnap = null;
+        try {
+            currentUserSnap = await(db().child("users").child(cUid).get());
+        } catch (Exception ignored) {}
         String cName = String.valueOf(currentName == null ? "" : currentName).trim();
         String cPhoto = "";
         String cB64 = "";
@@ -371,6 +378,7 @@ public class FirebaseFriendClient {
 
         Map<String, Object> notif = new HashMap<>();
         notif.put("id", notifId);
+        notif.put("fromUid", cUid);
         notif.put("title", notifTitle);
         notif.put("message", notifMsg);
         notif.put("createdAt", ServerValue.TIMESTAMP);
