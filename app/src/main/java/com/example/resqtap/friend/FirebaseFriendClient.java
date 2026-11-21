@@ -125,7 +125,47 @@ public class FirebaseFriendClient {
             targetName = raw;
         }
 
-        // 1. Carian langsung melalui indeks publicIds atau direct UID (Pantas & selamat)
+        // 1. Carian terus dalam pangkalan data Supabase (sumber profil sebenar aplikasi)
+        try {
+            org.json.JSONArray profiles = com.example.resqtap.supabase.SupabaseManager.getInstance().getAllProfilesSync();
+            if (profiles != null) {
+                for (int i = 0; i < profiles.length(); i++) {
+                    org.json.JSONObject p = profiles.getJSONObject(i);
+                    String pUid = p.optString("id", "").trim();
+                    String pName = p.optString("full_name", "").trim();
+                    if (pName.isEmpty()) pName = p.optString("name", "User").trim();
+                    String pEmail = p.optString("email", "").trim();
+                    String pTag = format4DigitId(pUid, "");
+                    String pPhoto = p.optString("photo_url", "").trim();
+
+                    boolean match = false;
+                    if (!targetName.isEmpty() && !targetTag.isEmpty()) {
+                        if (pName.equalsIgnoreCase(targetName) && (pTag.equalsIgnoreCase(targetTag) || pTag.endsWith(targetTag))) {
+                            match = true;
+                        }
+                    } else if (!targetTag.isEmpty()) {
+                        if (pTag.equalsIgnoreCase(targetTag) || pTag.endsWith(targetTag) || pUid.equalsIgnoreCase(targetTag)) {
+                            match = true;
+                        }
+                    } else if (!targetName.isEmpty()) {
+                        if (pName.equalsIgnoreCase(targetName) || pUid.equalsIgnoreCase(targetName) || pEmail.equalsIgnoreCase(targetName)) {
+                            match = true;
+                        }
+                    }
+
+                    if (match) {
+                        FriendInfo info = new FriendInfo();
+                        info.uid = pUid;
+                        info.name = pName;
+                        info.publicId = pTag;
+                        info.photoUrl = pPhoto;
+                        return info;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 2. Carian langsung melalui indeks publicIds atau direct UID di RTDB (Pantas & fallback)
         if (!targetTag.isEmpty()) {
             try {
                 DataSnapshot pidSnap = await(db().child("publicIds").child(targetTag).get());

@@ -246,6 +246,17 @@ public class SupabaseManager {
         });
     }
 
+    public JSONArray getAllProfilesSync() {
+        try {
+            String endpoint = "/rest/v1/profiles?select=id,full_name,email,phone,photo_url";
+            String response = executeRequest("GET", endpoint, null);
+            return new JSONArray(response);
+        } catch (Exception e) {
+            Log.e(TAG, "getAllProfilesSync failed: " + e.getMessage());
+            return null;
+        }
+    }
+
     public void upsertProfile(String userId, String email, String fullName, String phone, Callback<Boolean> callback) {
         upsertProfile(userId, email, fullName, phone, null, callback);
     }
