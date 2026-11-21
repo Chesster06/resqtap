@@ -186,6 +186,8 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
     private TextView tvProgressCategory;
     private TextView tvProgressAddress;
     private TextView tvProgressDetails;
+    private View layoutAdminRemarks;
+    private TextView tvProgressAdminRemarks;
     private ImageView imgProgressCategoryIcon;
     private HorizontalScrollView progressAttachmentsScroll;
     private LinearLayout progressAttachmentsContainer;
@@ -419,6 +421,8 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
         tvProgressCategory = findViewById(R.id.tv_progress_category);
         tvProgressAddress = findViewById(R.id.tv_progress_address);
         tvProgressDetails = findViewById(R.id.tv_progress_details);
+        layoutAdminRemarks = findViewById(R.id.layout_admin_remarks);
+        tvProgressAdminRemarks = findViewById(R.id.tv_progress_admin_remarks);
         imgProgressCategoryIcon = findViewById(R.id.img_progress_category_icon);
         progressAttachmentsScroll = findViewById(R.id.progress_attachments_scroll);
         progressAttachmentsContainer = findViewById(R.id.progress_attachments_container);
@@ -1023,9 +1027,13 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
                                 if (cardActiveReportBanner != null) {
                                     cardActiveReportBanner.setVisibility(View.GONE);
                                 }
-                                if (lastNotes != null && !lastNotes.trim().isEmpty() && tvProgressDetails != null) {
-                                    tvProgressDetails.setText(lastNotes.trim());
-                                    tvProgressDetails.setVisibility(View.VISIBLE);
+                                if (lastNotes != null && !lastNotes.trim().isEmpty()) {
+                                    if (tvProgressAdminRemarks != null) {
+                                        tvProgressAdminRemarks.setText(lastNotes.trim());
+                                    }
+                                    if (layoutAdminRemarks != null) {
+                                        layoutAdminRemarks.setVisibility(View.VISIBLE);
+                                    }
                                 }
                             });
                         }
@@ -1102,10 +1110,12 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
 
         String desc = snapshot.child("description").getValue(String.class);
         if (desc == null || desc.isEmpty()) desc = snapshot.child("details").getValue(String.class);
-        if (desc == null || desc.isEmpty()) desc = snapshot.child("progressNotes").getValue(String.class);
-        if (desc == null || desc.isEmpty()) desc = snapshot.child("adminNotes").getValue(String.class);
         map.put("details", desc != null ? desc : "");
         map.put("description", desc != null ? desc : "");
+
+        String adminNotes = snapshot.child("adminNotes").getValue(String.class);
+        if (adminNotes == null || adminNotes.isEmpty()) adminNotes = snapshot.child("progressNotes").getValue(String.class);
+        map.put("adminNotes", adminNotes != null ? adminNotes : "");
 
         String address = snapshot.child("address").getValue(String.class);
         map.put("address", address != null ? address : "");
@@ -1347,6 +1357,20 @@ public class ReportActivity extends BaseActivity implements OnMapReadyCallback {
                 tvProgressDetails.setVisibility(View.VISIBLE);
             } else {
                 tvProgressDetails.setVisibility(View.GONE);
+            }
+        }
+
+        String adminNotes = String.valueOf(data.get("adminNotes"));
+        if (adminNotes != null && !adminNotes.equals("null") && !adminNotes.trim().isEmpty()) {
+            if (tvProgressAdminRemarks != null) {
+                tvProgressAdminRemarks.setText(adminNotes.trim());
+            }
+            if (layoutAdminRemarks != null) {
+                layoutAdminRemarks.setVisibility(View.VISIBLE);
+            }
+        } else {
+            if (layoutAdminRemarks != null) {
+                layoutAdminRemarks.setVisibility(View.GONE);
             }
         }
 
