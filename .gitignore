@@ -34,3 +34,5 @@ verify_*.*
 Thumbs.db
 desktop.ini
 SECRETS_BACKUP.txt
+
+credential.txt

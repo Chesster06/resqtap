@@ -1437,6 +1437,7 @@ async function syncFromSupabase() {
             longitude: r.longitude,
             address: r.address,
             status: r.status,
+            image_url: r.image_url,
             senderName: r.user_name || "User",
             senderUid: r.user_id,
             createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now()
@@ -1837,9 +1838,25 @@ function reportStatusMeta(status) {
 }
 
 function reportAttachments(report) {
+  const list = [];
   const raw = report.attachments;
-  if (Array.isArray(raw)) return raw.map(asRecord).filter((item) => Object.keys(item).length);
-  return entries(raw).map(([, item]) => asRecord(item)).filter((item) => Object.keys(item).length);
+  if (Array.isArray(raw)) {
+    raw.map(asRecord).filter((item) => Object.keys(item).length).forEach((item) => list.push(item));
+  } else if (raw && typeof raw === "object") {
+    entries(raw).map(([, item]) => asRecord(item)).filter((item) => Object.keys(item).length).forEach((item) => list.push(item));
+  }
+
+  // Support single attachment columns from Supabase or legacy RTDB
+  const singleUrl = text(report.image_url || report.imageUrl || report.photo_url || report.photoUrl).trim();
+  if (singleUrl && !list.some((item) => text(item.downloadUrl || item.url) === singleUrl)) {
+    list.unshift({
+      name: "Incident Photo",
+      mimeType: singleUrl.startsWith("data:image/") ? "image/jpeg" : (singleUrl.includes(".png") ? "image/png" : "image/jpeg"),
+      downloadUrl: singleUrl
+    });
+  }
+
+  return list;
 }
 
 function getIncidentReports() {
@@ -9476,27 +9493,61 @@ elsVc.sendMessageBtn.addEventListener("click", (e) => {
     try { ms.leaflet.fitBounds(window._LeafletMap.latLngBounds(pts), { padding:[50,50], maxZoom:14 }); } catch(e) { /**/ }
   }
 
+  function getVisibleCopies(lat, lng) {
+    if (!ms.leaflet) return [window._LeafletMap.latLng(lat, lng)];
+    const bounds = ms.leaflet.getBounds();
+    const west = bounds.getWest();
+    const east = bounds.getEast();
+    const minK = Math.floor((west - lng) / 360) - 1;
+    const maxK = Math.ceil((east - lng) / 360) + 1;
+    const copies = [];
+    for (let k = minK; k <= maxK; k++) {
+      copies.push(window._LeafletMap.latLng(lat, lng + k * 360));
+    }
+    return copies;
+  }
+
   function prune(keep) {
-    ms.markers.forEach((m, k) => { if (!keep.has(k)) { m.remove(); ms.markers.delete(k); } });
+    ms.markers.forEach((item, k) => {
+      if (!keep.has(k)) {
+        if (Array.isArray(item)) {
+          item.forEach((m) => m.remove());
+        } else if (item && item.remove) {
+          item.remove();
+        }
+        ms.markers.delete(k);
+      }
+    });
   }
 
   function upsert(key, lat, lng, iconOpts, popup, cb) {
     if (!ms.leaflet || !window._LeafletMap) return;
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat===0 && lng===0)) return;
     const icon = mkIcon(iconOpts);
-    const ll   = window._LeafletMap.latLng(lat, lng);
-    if (ms.markers.has(key)) {
-      const m = ms.markers.get(key);
+    const copies = getVisibleCopies(lat, lng);
+    const existing = ms.markers.get(key) || [];
+    const list = Array.isArray(existing) ? existing : [existing];
+
+    // Reuse existing markers or create new ones for each visible world copy
+    while (list.length < copies.length) {
+      const m = window._LeafletMap.marker(copies[list.length], {icon}).addTo(ms.leaflet);
+      list.push(m);
+    }
+    while (list.length > copies.length) {
+      const m = list.pop();
+      if (m) m.remove();
+    }
+
+    copies.forEach((ll, i) => {
+      const m = list[i];
       m.setLatLng(ll).setIcon(icon).bindPopup(popup);
       if (cb) {
         m.off("click");
         m.on("click", cb);
       }
-    } else {
-      const m = window._LeafletMap.marker(ll, {icon}).addTo(ms.leaflet).bindPopup(popup);
-      if (cb) m.on("click", cb);
-      ms.markers.set(key, m);
-    }
+    });
+
+    ms.markers.set(key, list);
   }
 
   function refreshMarkers() {
@@ -9750,44 +9801,56 @@ elsVc.sendMessageBtn.addEventListener("click", (e) => {
     if (!container) { console.error("[LiveMap] #livemapContainer not found!"); return; }
     console.log("[LiveMap] Container size:", container.offsetWidth, "x", container.offsetHeight);
 
-    const worldBounds = window._LeafletMap.latLngBounds(
-      window._LeafletMap.latLng(-85.05112878, -180),
-      window._LeafletMap.latLng(85.05112878, 180)
+    const vertBounds = window._LeafletMap.latLngBounds(
+      window._LeafletMap.latLng(-85.05112878, -100000),
+      window._LeafletMap.latLng(85.05112878, 100000)
     );
+
+    const calcSafeMinZoom = () => {
+      if (!ms.leaflet || !window._LeafletMap) return 3;
+      try {
+        const h = container.offsetHeight || window.innerHeight;
+        // Tile size is 256px. At zoom z, world map height is 256 * 2^z.
+        // We require 256 * 2^z >= h, so 2^z >= h / 256, z >= Math.log2(h / 256)
+        const requiredZoom = Math.ceil(Math.log2(Math.max(1, h) / 256));
+        return Math.max(3, requiredZoom);
+      } catch (e) {
+        return 3;
+      }
+    };
+
+    const initialMinZoom = calcSafeMinZoom();
 
     ms.leaflet = window._LeafletMap.map(container, {
       center: [4.0, 109.5],
-      zoom: 6,
-      minZoom: 3,
+      zoom: Math.max(6, initialMinZoom),
+      minZoom: initialMinZoom,
       maxZoom: 19,
-      maxBounds: worldBounds,
+      maxBounds: vertBounds,
       maxBoundsViscosity: 1.0,
       worldCopyJump: false
     });
 
     window._LeafletMap.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      minZoom: 3,
+      minZoom: 1,
       maxZoom: 19,
-      bounds: worldBounds,
+      noWrap: false,
       attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
     }).addTo(ms.leaflet);
 
-    const syncMapLimits = () => {
-      if (!ms.leaflet || !window._LeafletMap) return;
-      try {
-        const fitMin = ms.leaflet.getBoundsZoom(worldBounds, true);
-        const safeMin = Math.max(3, Number.isFinite(fitMin) ? fitMin : 3);
-        ms.leaflet.setMinZoom(safeMin);
-        if (ms.leaflet.getZoom() < safeMin) {
-          ms.leaflet.setZoom(safeMin);
-        }
-      } catch (e) {
-        ms.leaflet.setMinZoom(3);
+    const enforceMinZoom = () => {
+      if (!ms.leaflet) return;
+      const safe = calcSafeMinZoom();
+      ms.leaflet.setMinZoom(safe);
+      if (ms.leaflet.getZoom() < safe) {
+        ms.leaflet.setZoom(safe);
       }
     };
 
-    syncMapLimits();
-    window.addEventListener("resize", syncMapLimits);
+    window.addEventListener("resize", enforceMinZoom);
+
+    // Keep markers synchronized across wrapped worlds on pan and zoom
+    ms.leaflet.on("moveend zoomend move", refreshMarkers);
 
     ms.initialized = true;
     window.__resqLiveMap = ms;
@@ -9796,7 +9859,6 @@ elsVc.sendMessageBtn.addEventListener("click", (e) => {
     [50, 150, 400].forEach((t) => setTimeout(() => {
       if (ms.leaflet) {
         ms.leaflet.invalidateSize();
-        syncMapLimits();
       }
     }, t));
     console.log("[LiveMap] Map initialized OK");
@@ -9851,7 +9913,6 @@ elsVc.sendMessageBtn.addEventListener("click", (e) => {
           if (ms.leaflet) ms.leaflet.invalidateSize();
           updateStats();
           refreshMarkers();
-          fitAll();
         });
       }
     });
