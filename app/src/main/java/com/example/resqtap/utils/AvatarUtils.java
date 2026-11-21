@@ -34,6 +34,13 @@ public final class AvatarUtils {
         view.setImageTintList(null);
 
         String b64 = String.valueOf(photoB64 == null ? "" : photoB64).trim();
+        String remote = String.valueOf(photoUrl == null ? "" : photoUrl).trim();
+        // Sekiranya remote URL sebenarnya mengandungi string Base64 (tersimpan dalam field photo_url)
+        if (b64.isEmpty() && !remote.isEmpty() && !remote.startsWith("http") && !remote.startsWith("gs://")) {
+            b64 = remote;
+            remote = "";
+        }
+
         if (!b64.isEmpty()) {
             Bitmap cached = bitmapCache.get(b64);
             if (cached != null) {

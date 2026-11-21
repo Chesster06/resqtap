@@ -977,6 +977,7 @@ public class MainActivity extends BaseActivity {
     private void refreshProfileUi() {
         String name = UserPrefs.getName(this);
         String photoUri = UserPrefs.getPhotoUri(this);
+        String photoUrl = UserPrefs.getPhotoUrl(this);
         String photoB64 = UserPrefs.getPhotoB64(this);
         String bloodType = UserPrefs.getBloodType(this);
         String allergies = UserPrefs.getAllergies(this);
@@ -995,7 +996,7 @@ public class MainActivity extends BaseActivity {
             subtitle.setText(getString(R.string.home_welcome_back));
         }
         if (headerPhoto != null) {
-            AvatarUtils.applyAvatar(headerPhoto, photoB64, photoUri, R.drawable.ic_avatar);
+            AvatarUtils.applyAvatar(headerPhoto, photoB64, photoUrl, photoUri, R.drawable.ic_avatar);
         }
 
         if (medicalCard != null) {

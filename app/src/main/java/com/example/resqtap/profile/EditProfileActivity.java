@@ -119,6 +119,7 @@ public class EditProfileActivity extends BaseActivity {
         String name = UserPrefs.getName(this);
         String email = UserPrefs.getEmail(this);
         String photoUri = UserPrefs.getPhotoUri(this);
+        String photoUrl = UserPrefs.getPhotoUrl(this);
         String photoB64 = UserPrefs.getPhotoB64(this);
         String dob = UserPrefs.getDateOfBirth(this);
         String gender = UserPrefs.getGender(this);
@@ -131,7 +132,7 @@ public class EditProfileActivity extends BaseActivity {
         String address = UserPrefs.getAddress(this);
 
         // Header Avatar
-        AvatarUtils.applyAvatar(profilePhoto, photoB64, photoUri, R.drawable.ic_avatar);
+        AvatarUtils.applyAvatar(profilePhoto, photoB64, photoUrl, photoUri, R.drawable.ic_avatar);
 
         // UID
         String shownUid = (publicId == null || publicId.trim().isEmpty()) ? uid : publicId.trim().toUpperCase();
