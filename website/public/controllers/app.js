@@ -1878,6 +1878,7 @@ function getIncidentReports() {
       category: text(report.category).trim(),
       categoryLabel: text(report.categoryLabel || report.title || report.category).trim() || "Report",
       details: text(report.details || report.description).trim(),
+      adminNotes: text(report.adminNotes || report.progressNotes).trim(),
       address: text(report.address).trim(),
       latitude: Number(report.latitude),
       longitude: Number(report.longitude),
@@ -5709,6 +5710,14 @@ function renderReportDetail(reportKey) {
       ${report.senderUid ? `<button class="secondary-button icon-button" data-action="call-reporter" data-uid="${escapeHtml(report.senderUid)}" data-name="${escapeHtml(report.senderName || report.senderEmail || "Reporter")}" type="button">${icon("phone-call")}<span>Call Reporter</span></button>` : ""}
     </section>
     <section class="detail-section">
+      <h3>Admin Action & Remarks</h3>
+      ${kv("Status", status.label)}
+      ${kv("Remarks", report.adminNotes || "Tiada catatan admin lagi.")}
+      <button class="primary-button icon-button" data-action="manage-report-case" data-report="${escapeHtml(report.key)}" type="button" style="width:100%;margin-top:10px;margin-bottom:0;box-sizing:border-box;">
+        ${icon("clipboard-edit")}<span>Update Case Progress</span>
+      </button>
+    </section>
+    <section class="detail-section">
       <h3>Location</h3>
       ${kv("Address", report.address)}
       ${kv("Coordinates", hasMap ? `${report.latitude}, ${report.longitude}` : "-")}
@@ -5721,11 +5730,6 @@ function renderReportDetail(reportKey) {
     <section class="detail-section">
       <h3>Attachments</h3>
       <div class="report-attachment-grid">${attachmentsHtml}</div>
-    </section>
-    <section class="detail-section">
-      <button class="primary-button icon-button" data-action="manage-report-case" data-report="${escapeHtml(report.key)}" type="button" style="width:100%;margin-top:0;margin-bottom:0;box-sizing:border-box;">
-        ${icon("clipboard-edit")}<span>Update Case Progress</span>
-      </button>
     </section>
   `;
   detailShell(report.categoryLabel || "Incident Report", `${status.label} - ${formatDate(report.createdAt)}`, body, avatarHtml(report.data, report.senderUid));
@@ -6657,7 +6661,7 @@ function openReportCaseModal(reportKey) {
   const reporterUid = report.senderUid || report.user_id || report.data?.user_id || report.data?.senderUid || "";
   const address = report.address || "Location unavailable";
   const categoryLabel = report.categoryLabel || "Incident";
-  const currentNotes = report.details || report.data?.description || report.description || "";
+  const currentNotes = report.adminNotes || report.data?.adminNotes || report.data?.progressNotes || "";
 
   activeReportCaseData = {
     reportKey: report.key || report.id,
@@ -6675,6 +6679,7 @@ function openReportCaseModal(reportKey) {
   const repText = document.getElementById("reportCaseReporterText");
   const locText = document.getElementById("reportCaseLocationText");
   const badge = document.getElementById("reportCaseStatusBadge");
+  const userDescText = document.getElementById("reportCaseUserDescText");
   const notesInput = document.getElementById("reportCaseNotesInput");
   const callBtn = document.getElementById("reportCaseCallBtn");
 
@@ -6682,6 +6687,7 @@ function openReportCaseModal(reportKey) {
   if (sub) sub.textContent = `Case #${report.id.slice(0, 8)} • Response Stage`;
   if (repText) repText.textContent = `${reporterName} (${report.senderEmail || reporterUid || "No contact"})`;
   if (locText) locText.textContent = address;
+  if (userDescText) userDescText.textContent = report.details || report.data?.description || report.description || "No description provided by user.";
 
   const statusMeta = reportStatusMeta(curStatus);
   if (badge) {
@@ -7071,7 +7077,7 @@ async function setReportStatus(reportId, status, notes = null) {
   if (state.incidentReports && state.incidentReports[reportId]) {
     state.incidentReports[reportId].status = meta.id;
     if (notes !== null && notes !== undefined) {
-      state.incidentReports[reportId].description = notes;
+      state.incidentReports[reportId].adminNotes = notes;
     }
     render();
   }
@@ -7111,8 +7117,6 @@ async function setReportStatus(reportId, status, notes = null) {
         }
 
         if (notes !== null && notes !== undefined) {
-          rootUpdates[`${prefix}/description`] = notes;
-          rootUpdates[`${prefix}/details`] = notes;
           rootUpdates[`${prefix}/progressNotes`] = notes;
           rootUpdates[`${prefix}/adminNotes`] = notes;
         }
@@ -7132,7 +7136,7 @@ async function setReportStatus(reportId, status, notes = null) {
         if (reporterUid && validPathSegment(reporterUid)) {
           rootUpdates[`users/${reporterUid}/lastIncidentReportId`] = reportId;
           rootUpdates[`users/${reporterUid}/lastIncidentReportStatus`] = meta.id;
-          rootUpdates[`users/${reporterUid}/lastIncidentReportNotes`] = notes !== null ? notes : (repObj?.description || "");
+          rootUpdates[`users/${reporterUid}/lastIncidentReportNotes`] = notes !== null ? notes : (repObj?.adminNotes || "");
           rootUpdates[`users/${reporterUid}/lastIncidentReportUpdatedAt`] = serverTimestamp();
         }
 
@@ -7147,7 +7151,7 @@ async function setReportStatus(reportId, status, notes = null) {
             const userUpdate = {};
             userUpdate[`users/${reporterUid}/lastIncidentReportId`] = reportId;
             userUpdate[`users/${reporterUid}/lastIncidentReportStatus`] = meta.id;
-            userUpdate[`users/${reporterUid}/lastIncidentReportNotes`] = notes !== null ? notes : (repObj?.description || "");
+            userUpdate[`users/${reporterUid}/lastIncidentReportNotes`] = notes !== null ? notes : (repObj?.adminNotes || "");
             userUpdate[`users/${reporterUid}/lastIncidentReportUpdatedAt`] = serverTimestamp();
             await update(ref(db), userUpdate);
             if (meta.id === "resolved" || meta.id === "rejected") {

@@ -1514,13 +1514,19 @@
 
       <div class="sos-case-body">
         <!-- Reporter & Location Info Summary -->
-        <div class="report-case-summary-card" id="reportCaseSummaryCard" style="display:flex;align-items:center;justify-content:space-between;background:var(--panel-soft,rgba(255,255,255,0.05));border:1px solid var(--line);border-radius:12px;padding:12px 16px;">
-          <div>
-            <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Reporter & Location</div>
-            <div id="reportCaseReporterText" style="font-weight:700;color:var(--ink);font-size:0.95rem;margin-top:2px;">User</div>
-            <div id="reportCaseLocationText" style="font-size:0.8rem;color:var(--muted);margin-top:2px;">-</div>
+        <div class="report-case-summary-card" id="reportCaseSummaryCard" style="display:flex;flex-direction:column;gap:8px;background:var(--panel-soft,rgba(255,255,255,0.05));border:1px solid var(--line);border-radius:12px;padding:12px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Reporter & Location</div>
+              <div id="reportCaseReporterText" style="font-weight:700;color:var(--ink);font-size:0.95rem;margin-top:2px;">User</div>
+              <div id="reportCaseLocationText" style="font-size:0.8rem;color:var(--muted);margin-top:2px;">-</div>
+            </div>
+            <span id="reportCaseStatusBadge" class="pill-badge pill-alert">New</span>
           </div>
-          <span id="reportCaseStatusBadge" class="pill-badge pill-alert">New</span>
+          <div id="reportCaseUserDescBox" style="background:var(--panel-card,rgba(0,0,0,0.2));border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:4px;">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">User Incident Description (Read-Only)</div>
+            <div id="reportCaseUserDescText" style="font-size:0.85rem;color:var(--ink);line-height:1.4;white-space:pre-wrap;">-</div>
+          </div>
         </div>
 
         <!-- Progress Stepper Selector -->
@@ -1729,7 +1735,7 @@
     </div>
   </div>
 
-  <script type="module" src="/app.js?v=report-attach-v10"></script>
+  <script type="module" src="/app.js?v=admin-notes-section-v11"></script>
 </body>
 </html>
 
