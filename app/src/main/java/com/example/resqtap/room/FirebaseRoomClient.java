@@ -331,6 +331,7 @@ public final class FirebaseRoomClient {
         creatorUserRoom.put("createdAt", ServerValue.TIMESTAMP);
         updates.put("userRooms/" + u + "/" + code, creatorUserRoom);
 
+        List<Map<String, Object>> pendingNotifs = new ArrayList<>();
         if (friends != null) {
             for (com.example.resqtap.friend.FirebaseFriendClient.FriendInfo friend : friends) {
                 if (friend == null || friend.uid == null || friend.uid.isEmpty() || friend.uid.equalsIgnoreCase(u)) continue;
@@ -354,14 +355,32 @@ public final class FirebaseRoomClient {
                 String notifId = "room_invite_" + System.currentTimeMillis() + "_" + safeSuffix;
                 Map<String, Object> notif = new HashMap<>();
                 notif.put("id", notifId);
+                notif.put("fromUid", u);
                 notif.put("title", "Room Invitation");
                 notif.put("message", (creatorName != null && !creatorName.isEmpty() ? creatorName : "Your friend") + " added you to room '" + name + "'.");
                 notif.put("createdAt", ServerValue.TIMESTAMP);
-                updates.put("userNotifications/" + friend.uid + "/" + notifId, notif);
+
+                Map<String, Object> entry = new HashMap<>();
+                entry.put("targetUid", friend.uid);
+                entry.put("notifId", notifId);
+                entry.put("notif", notif);
+                pendingNotifs.add(entry);
             }
         }
 
         await(db().updateChildren(updates));
+
+        for (Map<String, Object> entry : pendingNotifs) {
+            try {
+                String targetUid = (String) entry.get("targetUid");
+                String notifId = (String) entry.get("notifId");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> notif = (Map<String, Object>) entry.get("notif");
+                if (targetUid != null && notifId != null && notif != null) {
+                    db().child("userNotifications").child(targetUid).child(notifId).setValue(notif);
+                }
+            } catch (Exception ignored) {}
+        }
         return code;
     }
 
@@ -393,16 +412,22 @@ public final class FirebaseRoomClient {
         friendUserRoom.put("createdAt", ServerValue.TIMESTAMP);
         updates.put("userRooms/" + fUid + "/" + code, friendUserRoom);
 
-        String safeSuffix = fUid.length() >= 4 ? fUid.substring(0, 4) : fUid;
-        String notifId = "room_invite_" + System.currentTimeMillis() + "_" + safeSuffix;
-        Map<String, Object> notif = new HashMap<>();
-        notif.put("id", notifId);
-        notif.put("title", "Room Invitation");
-        notif.put("message", (inviterName != null && !inviterName.isEmpty() ? inviterName : "Your friend") + " added you to room '" + name + "'.");
-        notif.put("createdAt", ServerValue.TIMESTAMP);
-        updates.put("userNotifications/" + fUid + "/" + notifId, notif);
-
         await(db().updateChildren(updates));
+
+        try {
+            String safeSuffix = fUid.length() >= 4 ? fUid.substring(0, 4) : fUid;
+            String notifId = "room_invite_" + System.currentTimeMillis() + "_" + safeSuffix;
+            String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+            Map<String, Object> notif = new HashMap<>();
+            notif.put("id", notifId);
+            if (currentUid != null && !currentUid.isEmpty()) {
+                notif.put("fromUid", currentUid);
+            }
+            notif.put("title", "Room Invitation");
+            notif.put("message", (inviterName != null && !inviterName.isEmpty() ? inviterName : "Your friend") + " added you to room '" + name + "'.");
+            notif.put("createdAt", ServerValue.TIMESTAMP);
+            db().child("userNotifications").child(fUid).child(notifId).setValue(notif);
+        } catch (Exception ignored) {}
     }
 
     public static void joinRoom(String roomCode, String uid, String name, String password) throws Exception {

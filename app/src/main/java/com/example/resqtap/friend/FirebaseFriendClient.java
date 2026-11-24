@@ -292,20 +292,22 @@ public class FirebaseFriendClient {
         updates.put("friendRequests/" + tUid + "/" + fUid, reqData);
         updates.put("sentRequests/" + fUid + "/" + tUid, reqData);
 
-        String notifId = "friend_req_" + System.currentTimeMillis();
-        String notifTitle = context != null ? context.getString(R.string.notif_friend_request_title) : "Friend Request";
-        String who = fromName.isEmpty() ? (context != null ? context.getString(R.string.someone) : "Someone") : fromName;
-        String notifMsg = context != null ? context.getString(R.string.notif_friend_request_msg, who) : who + " sent you a friend request.";
-
-        Map<String, Object> notif = new HashMap<>();
-        notif.put("id", notifId);
-        notif.put("fromUid", fUid);
-        notif.put("title", notifTitle);
-        notif.put("message", notifMsg);
-        notif.put("createdAt", ServerValue.TIMESTAMP);
-        updates.put("userNotifications/" + tUid + "/" + notifId, notif);
-
         await(db().updateChildren(updates));
+
+        try {
+            String notifId = "friend_req_" + System.currentTimeMillis();
+            String notifTitle = context != null ? context.getString(R.string.notif_friend_request_title) : "Friend Request";
+            String who = fromName.isEmpty() ? (context != null ? context.getString(R.string.someone) : "Someone") : fromName;
+            String notifMsg = context != null ? context.getString(R.string.notif_friend_request_msg, who) : who + " sent you a friend request.";
+
+            Map<String, Object> notif = new HashMap<>();
+            notif.put("id", notifId);
+            notif.put("fromUid", fUid);
+            notif.put("title", notifTitle);
+            notif.put("message", notifMsg);
+            notif.put("createdAt", ServerValue.TIMESTAMP);
+            await(db().child("userNotifications").child(tUid).child(notifId).setValue(notif));
+        } catch (Exception ignored) {}
     }
 
     public static void acceptFriendRequest(Context context, String currentUid, String currentName, String currentPublicId, FriendRequest request) throws Exception {
@@ -371,20 +373,22 @@ public class FirebaseFriendClient {
         updates.put("friendRequests/" + cUid + "/" + fUid, null);
         updates.put("sentRequests/" + fUid + "/" + cUid, null);
 
-        String notifId = "friend_accepted_" + System.currentTimeMillis();
-        String notifTitle = context != null ? context.getString(R.string.notif_friend_accepted_title) : "Friend Request Accepted";
-        String who = cName.isEmpty() ? (context != null ? context.getString(R.string.friend_user_default) : "User") : cName;
-        String notifMsg = context != null ? context.getString(R.string.notif_friend_accepted_msg, who) : who + " accepted your friend request!";
-
-        Map<String, Object> notif = new HashMap<>();
-        notif.put("id", notifId);
-        notif.put("fromUid", cUid);
-        notif.put("title", notifTitle);
-        notif.put("message", notifMsg);
-        notif.put("createdAt", ServerValue.TIMESTAMP);
-        updates.put("userNotifications/" + fUid + "/" + notifId, notif);
-
         await(db().updateChildren(updates));
+
+        try {
+            String notifId = "friend_accepted_" + System.currentTimeMillis();
+            String notifTitle = context != null ? context.getString(R.string.notif_friend_accepted_title) : "Friend Request Accepted";
+            String who = cName.isEmpty() ? (context != null ? context.getString(R.string.friend_user_default) : "User") : cName;
+            String notifMsg = context != null ? context.getString(R.string.notif_friend_accepted_msg, who) : who + " accepted your friend request!";
+
+            Map<String, Object> notif = new HashMap<>();
+            notif.put("id", notifId);
+            notif.put("fromUid", cUid);
+            notif.put("title", notifTitle);
+            notif.put("message", notifMsg);
+            notif.put("createdAt", ServerValue.TIMESTAMP);
+            await(db().child("userNotifications").child(fUid).child(notifId).setValue(notif));
+        } catch (Exception ignored) {}
     }
 
     /** Simpan atau kemaskini gambar profil kawan dalam userFriends (latar belakang) */
@@ -490,13 +494,39 @@ public class FirebaseFriendClient {
             if (callback != null) callback.onLoaded(null);
             return;
         }
-        db().child("users").child(uid.trim()).get().addOnCompleteListener(task -> {
+        final String cleanUid = uid.trim();
+        db().child("users").child(cleanUid).get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
                 UserDetail d = UserDetail.from(task.getResult());
                 if (callback != null) callback.onLoaded(d);
-            } else {
-                if (callback != null) callback.onLoaded(null);
+                return;
             }
+            com.example.resqtap.supabase.SupabaseManager.getInstance().getProfile(cleanUid, new com.example.resqtap.supabase.SupabaseManager.Callback<org.json.JSONObject>() {
+                @Override
+                public void onSuccess(org.json.JSONObject profile) {
+                    if (profile == null) {
+                        if (callback != null) callback.onLoaded(null);
+                        return;
+                    }
+                    UserDetail d = new UserDetail();
+                    d.uid = cleanUid;
+                    d.name = profile.optString("full_name", profile.optString("name", "")).trim();
+                    d.email = profile.optString("email", "").trim();
+                    d.phone = profile.optString("phone", "").trim();
+                    d.bloodType = profile.optString("blood_type", profile.optString("bloodType", "")).trim();
+                    d.allergies = profile.optString("allergies", "").trim();
+                    d.existingConditions = profile.optString("existing_conditions", profile.optString("existingConditions", "")).trim();
+                    d.gender = profile.optString("gender", "").trim();
+                    d.dob = profile.optString("dob", profile.optString("date_of_birth", "")).trim();
+                    d.address = profile.optString("address", "").trim();
+                    if (callback != null) callback.onLoaded(d);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    if (callback != null) callback.onLoaded(null);
+                }
+            });
         });
     }
 }

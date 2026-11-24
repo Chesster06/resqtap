@@ -290,9 +290,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
         FirebaseFriendClient.fetchUserDetailQueued(friendUid, detail -> {
             detailLookupInFlight.remove(friendUid);
-            if (detail != null) {
-                detailCache.put(friendUid, detail);
-            }
+            detailCache.put(friendUid, detail != null ? detail : new FirebaseFriendClient.UserDetail());
             mainHandler.post(() -> {
                 int pos = -1;
                 for (int i = 0; i < displayFriends.size(); i++) {

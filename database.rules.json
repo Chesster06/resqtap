@@ -178,7 +178,7 @@
         "email"
       ],
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
+        ".read": "auth != null && (auth.uid === $uid || root.child('userFriends').child($uid).child(auth.uid).exists() || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
         ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
         "name":     { ".read": "auth != null" },
         "publicId": { ".read": "auth != null" },
@@ -192,7 +192,7 @@
         ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
         ".indexOn": ["createdAt"],
         "$roomId": {
-          ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)"
+          ".write": "auth != null && (auth.uid === $uid || root.child('userFriends').child($uid).child(auth.uid).exists() || root.child('rooms').child($roomId).child('creatorUid').val() === auth.uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)"
         }
       }
     },
@@ -226,7 +226,10 @@
     "userNotifications": {
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
-        ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true || newData.child('fromUid').val() === auth.uid)"
+        ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true)",
+        "$notifId": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('admins').child(auth.uid).child('active').val() === true || newData.child('fromUid').val() === auth.uid)"
+        }
       }
     },
     "publicIds": {
